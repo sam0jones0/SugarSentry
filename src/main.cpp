@@ -1,17 +1,16 @@
-#include <Arduino.h>
-#include <sample.h>
-
-// put function declarations here:
-int myFunction(int, int);
+#include "Arduino.h"
 
 void setup()
 {
   Serial.begin(115200);
-  int result = add(1, 2);
-  Serial.printf("1 + 2 = %d\n", result);
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(500);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(500);
+  Serial.print("Hello world\n");
 }

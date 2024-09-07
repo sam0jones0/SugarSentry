@@ -44,6 +44,8 @@ Additional Advantages:
 
 ## Development Setup
 
+platformIO in vscode on Windows 10
+
 ```ini
 [env:esp32dev]
 platform = espressif32
@@ -76,5 +78,4 @@ project_root/
 ----
 
 Question:
-
 
