@@ -41,7 +41,40 @@ Additional Advantages:
 - Good community support and available libraries
 - Cost-effective for prototype development
 
+
+## Development Setup
+
+```ini
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+monitor_speed = 115200
+lib_deps = 
+    ; Add your library dependencies here
+test_ignore = test_desktop
+```
+
+## Project Structure and Organization
+
+```
+project_root/
+├── src/
+│   ├── main.cpp
+├── lib/
+│   └── README
+├── include/
+│   └── project_config.h
+├── test/
+│   ├── test_desktop/
+│   └── test_embedded/
+├── platformio.ini
+├── README.md
+└── .gitignore
+```
+
 ----
 
 Question:
+
 
