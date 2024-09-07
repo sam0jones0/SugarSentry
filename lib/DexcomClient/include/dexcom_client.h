@@ -7,10 +7,8 @@
 #include <optional>
 #include "dexcom_constants.h"
 #include "dexcom_errors.h"
+#include "glucose_reading.h"
 
-class GlucoseReading {
-    // GlucoseReading class implementation
-};
 
 class DexcomClient {
 public:
