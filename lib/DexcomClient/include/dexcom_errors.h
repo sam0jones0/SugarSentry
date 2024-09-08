@@ -6,22 +6,18 @@
 
 namespace DexcomErrors
 {
-
-    // Account error enum
     enum class AccountError : uint8_t
     {
         FAILED_AUTHENTICATION,
         MAX_ATTEMPTS
     };
 
-    // Session error enum
     enum class SessionError : uint8_t
     {
         NOT_FOUND,
         INVALID
     };
 
-    // Argument error enum
     enum class ArgumentError : uint8_t
     {
         MINUTES_INVALID,
@@ -37,9 +33,8 @@ namespace DexcomErrors
         GLUCOSE_READING_INVALID
     };
 
-} // namespace DexcomErrors
+}
 
-// Base class for all Dexcom errors
 class DexcomError : public std::exception
 {
 protected:
@@ -53,7 +48,6 @@ public:
     }
 };
 
-// Specific error classes
 class AccountError : public DexcomError
 {
 public:

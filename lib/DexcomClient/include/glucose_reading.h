@@ -20,8 +20,6 @@ public:
     const char* getTrendArrow() const noexcept { return DexcomConst::TREND_ARROWS[static_cast<int>(_trend)]; }
     time_t getDateTime() const noexcept { return _datetime; }
 
-    const char* toString() const noexcept { return String(_value).c_str(); }
-
 private:
     int _value;
     DexcomConst::TrendDirection _trend;
