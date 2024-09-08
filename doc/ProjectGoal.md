@@ -46,15 +46,24 @@ Additional Advantages:
 
 platformIO in vscode on Windows 10
 
+Written in C++
+
 ```ini
-[env:esp32dev]
+[env:featheresp32]
 platform = espressif32
-board = esp32dev
+board = featheresp32
 framework = arduino
 monitor_speed = 115200
+upload_speed = 921600
 lib_deps = 
-    ; Add your library dependencies here
+    bblanchon/ArduinoJson @ ^6.18.5
 test_ignore = test_desktop
+
+[env:native]
+platform = native
+build_flags = -std=c++11
+test_ignore = test_embedded
+build_src_filter = +<*> -<.git/> -<.svn/>
 ```
 
 ## Project Structure and Organization
