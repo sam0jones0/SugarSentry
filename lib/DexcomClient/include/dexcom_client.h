@@ -9,39 +9,41 @@
 #include "dexcom_errors.h"
 #include "glucose_reading.h"
 
-
-class DexcomClient {
+class DexcomClient
+{
 public:
-    DexcomClient(WiFiClientSecure& client, 
-                 const String& password,
-                 const String& account_id = "",
-                 const String& username = "",
+    DexcomClient(WiFiClientSecure &client,
+                 const String &password,
+                 const String &account_id = "",
+                 const String &username = "",
                  bool ous = false);
 
-    std::vector<GlucoseReading> getGlucoseReadings(int minutes = DexcomConst::MAX_MINUTES, 
+    std::vector<GlucoseReading> getGlucoseReadings(int minutes = DexcomConst::MAX_MINUTES,
                                                    int max_count = DexcomConst::MAX_MAX_COUNT);
 
+    std::optional<GlucoseReading> getLatestGlucoseReading();
+    std::optional<GlucoseReading> getCurrentGlucoseReading();
+
 private:
-    WiFiClientSecure& _client;
+    WiFiClientSecure &_client;
+    String _base_url;
     String _password;
     String _account_id;
     String _username;
-    bool _ous;
     String _session_id;
 
-    String post(const String& endpoint, 
-                const std::optional<String>& params = std::nullopt,
-                const std::optional<String>& json = std::nullopt);
+    String post(const String &endpoint,
+                const String &params = "",
+                const String &json = "");
 
-    std::optional<DexcomError> handleResponse(const String& response);
+    std::optional<DexcomError> handleResponse(const String &response);
 
     String getAccountId();
     String getSessionId();
 
     void createSession();
 
-    std::vector<String> getGlucoseReadingsRaw(int minutes = DexcomConst::MAX_MINUTES, 
-                                              int max_count = DexcomConst::MAX_MAX_COUNT);
+    std::vector<String> getGlucoseReadingsRaw(int minutes = DexcomConst::MAX_MINUTES, int max_count = DexcomConst::MAX_MAX_COUNT);
 };
 
 #endif // DEXCOM_CLIENT_H
