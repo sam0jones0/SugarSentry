@@ -2,69 +2,78 @@
 #define DEXCOM_ERRORS_H
 
 #include <Arduino.h>
+#include <exception>
 
-// Base enum for all Dexcom error types
-enum class DexcomErrorEnum {
-    // Base class, no specific errors
-};
+namespace DexcomErrors
+{
 
-// Account error enum
-enum class AccountErrorEnum : DexcomErrorEnum {
-    FAILED_AUTHENTICATION,
-    MAX_ATTEMPTS
-};
+    // Account error enum
+    enum class AccountError : uint8_t
+    {
+        FAILED_AUTHENTICATION,
+        MAX_ATTEMPTS
+    };
 
-// Session error enum
-enum class SessionErrorEnum : DexcomErrorEnum {
-    NOT_FOUND,
-    INVALID
-};
+    // Session error enum
+    enum class SessionError : uint8_t
+    {
+        NOT_FOUND,
+        INVALID
+    };
 
-// Argument error enum
-enum class ArgumentErrorEnum : DexcomErrorEnum {
-    MINUTES_INVALID,
-    MAX_COUNT_INVALID,
-    USERNAME_INVALID,
-    TOO_MANY_USER_ID_PROVIDED,
-    NONE_USER_ID_PROVIDED,
-    PASSWORD_INVALID,
-    ACCOUNT_ID_INVALID,
-    ACCOUNT_ID_DEFAULT,
-    SESSION_ID_INVALID,
-    SESSION_ID_DEFAULT,
-    GLUCOSE_READING_INVALID
-};
+    // Argument error enum
+    enum class ArgumentError : uint8_t
+    {
+        MINUTES_INVALID,
+        MAX_COUNT_INVALID,
+        USERNAME_INVALID,
+        TOO_MANY_USER_ID_PROVIDED,
+        NONE_USER_ID_PROVIDED,
+        PASSWORD_INVALID,
+        ACCOUNT_ID_INVALID,
+        ACCOUNT_ID_DEFAULT,
+        SESSION_ID_INVALID,
+        SESSION_ID_DEFAULT,
+        GLUCOSE_READING_INVALID
+    };
+
+} // namespace DexcomErrors
 
 // Base class for all Dexcom errors
-class DexcomError : public std::exception {
+class DexcomError : public std::exception
+{
 protected:
     String _message;
 
 public:
-    DexcomError(const String& message) : _message(message) {}
-    virtual const char* what() const noexcept override {
+    DexcomError(const String &message) : _message(message) {}
+    virtual const char *what() const noexcept override
+    {
         return _message.c_str();
     }
 };
 
 // Specific error classes
-class AccountError : public DexcomError {
+class AccountError : public DexcomError
+{
 public:
-    AccountError(AccountErrorEnum error);
+    AccountError(DexcomErrors::AccountError error);
 };
 
-class SessionError : public DexcomError {
+class SessionError : public DexcomError
+{
 public:
-    SessionError(SessionErrorEnum error);
+    SessionError(DexcomErrors::SessionError error);
 };
 
-class ArgumentError : public DexcomError {
+class ArgumentError : public DexcomError
+{
 public:
-    ArgumentError(ArgumentErrorEnum error);
+    ArgumentError(DexcomErrors::ArgumentError error);
 };
 
-String getErrorMessage(AccountErrorEnum error);
-String getErrorMessage(SessionErrorEnum error);
-String getErrorMessage(ArgumentErrorEnum error);
+String getErrorMessage(DexcomErrors::AccountError error);
+String getErrorMessage(DexcomErrors::SessionError error);
+String getErrorMessage(DexcomErrors::ArgumentError error);
 
 #endif // DEXCOM_ERRORS_H
