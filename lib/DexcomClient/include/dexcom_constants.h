@@ -1,7 +1,7 @@
 #ifndef DEXCOM_CONSTANTS_H
 #define DEXCOM_CONSTANTS_H
 
-#include <Arduino.h>
+#include <cstring>
 
 namespace DexcomConst
 {
@@ -57,6 +57,18 @@ namespace DexcomConst
     constexpr uint16_t MAX_MINUTES = 1440;
     constexpr uint16_t MAX_MAX_COUNT = 288;
     constexpr float MMOL_L_CONVERSION_FACTOR = 0.0555f;
+
+    inline TrendDirection stringToTrendDirection(const char *trendString)
+    {
+        for (uint8_t i = 0; i < 10; ++i)
+        {
+            if (strcmp(trendString, TREND_DIRECTION_STRINGS[i]) == 0)
+            {
+                return static_cast<TrendDirection>(i);
+            }
+        }
+        return TrendDirection::None;
+    }
 }
 
 #endif // DEXCOM_CONSTANTS_H
