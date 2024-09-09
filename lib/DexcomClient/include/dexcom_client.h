@@ -47,3 +47,17 @@ private:
 };
 
 #endif // DEXCOM_CLIENT_H
+
+/*
+
+createSession = getAccountId -> getSessionId 
+
+E.g. Response from Dexcom API for getAccountId: `ae3b74f1-243e-45bc-bb6c-84e997456e5a`
+E.g. Response from Dexcom API for getSessionId: `7b644843-e1f9-42a5-8288-1cddaf6102e3`
+
+E.g. Resposne from Dexcom API for getGlucoseReadingsRaw(max_count=2)
+```
+[{'WT': 'Date(1725872745000)', 'ST': 'Date(1725872745000)', 'DT': 'Date(1725872745000+0100)', 'Value': 161, 'Trend': 'SingleDown'}, {'WT': 'Date(1725872445000)', 'ST': 'Date(1725872445000)', 'DT': 'Date(1725872445000+0100)', 'Value': 184, 'Trend': 'FortyFiveDown'}]
+```
+
+*/

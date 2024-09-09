@@ -27,3 +27,13 @@ private:
 };
 
 #endif // GLUCOSE_READING_H
+
+
+/*
+Glucose reading response from Dexcom API:
+
+```json
+[{'WT': 'Date(1725872445000)', 'ST': 'Date(1725872445000)', 'DT': 'Date(1725872445000+0100)', 'Value': 184, 'Trend': 'FortyFiveDown'}, {'WT': 'Date(1725872145000)', 'ST': 'Date(1725872145000)', 'DT': 'Date(1725872145000+0100)', 'Value': 199, 'Trend': 'Flat'}]
+```
+
+*/
