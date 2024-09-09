@@ -1,10 +1,10 @@
 # SugarSentry
 
-ESP32-based portable blood glucose monitor with e-ink display. Inspired by gagebenne/pydexcom and lmarzen/esp32-weather-epd.
-
 > ❗ **Project Status: In Progress**
 > 
 > This project is currently under active development and is not yet ready for production use.
+
+ESP32-based portable blood glucose monitor with e-ink display. Inspired by gagebenne/pydexcom and lmarzen/esp32-weather-epd.
 
 ## Description
 
