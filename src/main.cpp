@@ -1,20 +1,13 @@
 #include "Arduino.h"
 // #include <WiFiClientSecure.h>
 
-// void setup()
-// {
-//   Serial.begin(115200);
-//   pinMode(LED_BUILTIN, OUTPUT);
-// }
 
-// void loop()
-// {
-//   digitalWrite(LED_BUILTIN, HIGH);
-//   delay(500);
-//   digitalWrite(LED_BUILTIN, LOW);
-//   delay(500);
-//   Serial.print("Hello world\n");
-// }
+/*
+Most of the code so far is in
+
+https://github.com/sam0jones0/SugarSentry/tree/main/lib/DexcomClient/include
+*/
+
 
 namespace A::B::C
 {
@@ -37,3 +30,19 @@ void setup()
   TestCpp17();
 }
 void loop() {}
+
+
+// void setup()
+// {
+//   Serial.begin(115200);
+//   pinMode(LED_BUILTIN, OUTPUT);
+// }
+
+// void loop()
+// {
+//   digitalWrite(LED_BUILTIN, HIGH);
+//   delay(500);
+//   digitalWrite(LED_BUILTIN, LOW);
+//   delay(500);
+//   Serial.print("Hello world\n");
+// }
