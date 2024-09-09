@@ -49,30 +49,101 @@ private:
 #endif // DEXCOM_CLIENT_H
 
 /*
+1. getAccountId
 
-createSession = getAccountId -> getSessionId 
+Request:
+```
+curl --location 'https://shareous1.dexcom.com/ShareWebServices/Services/General/AuthenticatePublisherAccount' \
+--header 'Accept-Encoding: application/json' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "accountName": "OBFUSCATED_USERNAME",
+    "password": "OBFUSCATED_PASSWORD",
+    "applicationId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}'
+```
 
-E.g. Response from Dexcom API for getAccountId: `ae3b74f1-243e-45bc-bb6c-84e997456e5a`
-E.g. Response from Dexcom API for getSessionId: `7b644843-e1f9-42a5-8288-1cddaf6102e3`
+Response:
+```json
+"yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+```
 
-E.g. Resposne from Dexcom API for getGlucoseReadingsRaw(max_count=2)
+2. getSessionId
+
+Request:
+```
+curl --location 'https://shareous1.dexcom.com/ShareWebServices/Services/General/LoginPublisherAccountById' \
+--header 'Accept-Encoding: application/json' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "accountId": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+    "password": "OBFUSCATED_PASSWORD",
+    "applicationId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}'
+```
+
+Response:
+```json
+"zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz"
+```
+
+3. getGlucoseReadings
+
+Request:
+```
+curl --location 'https://shareous1.dexcom.com/ShareWebServices/Services/Publisher/ReadPublisherLatestGlucoseValues?sessionId=zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz&minutes=1440&maxCount=2' \
+--header 'Accept-Encoding: application/json' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "accountName": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+    "password": "OBFUSCATED_PASSWORD",
+    "applicationId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}'
+```
+
+Response:
 ```json
 [
-    {
-        "WT": "Date(1725875745000)",
-        "ST": "Date(1725875745000)",
-        "DT": "Date(1725875745000+0100)",
-        "Value": 39,
-        "Trend": "NotComputable"
-    },
-    {
-        "WT": "Date(1725875445000)",
-        "ST": "Date(1725875445000)",
-        "DT": "Date(1725875445000+0100)",
-        "Value": 52,
-        "Trend": "NotComputable"
-    }
+  {
+    "DT": "/Date(1600000000000)/",
+    "ST": "/Date(1600000000000)/",
+    "Trend": 4,
+    "Value": 120,
+    "WT": "/Date(1600000000000)/"
+  },
+  {
+    "DT": "/Date(1599999700000)/",
+    "ST": "/Date(1599999700000)/",
+    "Trend": 4,
+    "Value": 118,
+    "WT": "/Date(1599999700000)/"
+  }
 ]
+```
+
+Flow:
+
+1. getAccountId:
+   - Input: Username, password, and application ID
+   - Output: Account ID
+
+2. getSessionId:
+   - Input: Account ID (from step 1), password, and application ID
+   - Output: Session ID
+
+3. getGlucoseReadings:
+   - Input: Session ID (from step 2), time range (minutes), and max count of readings
+   - Output: Array of glucose readings, each containing:
+     - DT: Device Time
+     - ST: System Time
+     - Trend: Glucose trend indicator
+     - Value: Glucose value
+     - WT: Wall Time
+
+This flow allows you to:
+1. Authenticate and get an account ID
+2. Use the account ID to get a session ID
+3. Use the session ID to fetch glucose readings
 ```
 
 */
