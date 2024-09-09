@@ -104,20 +104,20 @@ curl --location 'https://shareous1.dexcom.com/ShareWebServices/Services/Publishe
 Response:
 ```json
 [
-  {
-    "DT": "/Date(1600000000000)/",
-    "ST": "/Date(1600000000000)/",
-    "Trend": 4,
-    "Value": 120,
-    "WT": "/Date(1600000000000)/"
-  },
-  {
-    "DT": "/Date(1599999700000)/",
-    "ST": "/Date(1599999700000)/",
-    "Trend": 4,
-    "Value": 118,
-    "WT": "/Date(1599999700000)/"
-  }
+   {
+        "WT": "Date(1725874245000)",
+        "ST": "Date(1725874245000)",
+        "DT": "Date(1725874245000+0100)",
+        "Value": 66,
+        "Trend": "DoubleDown"
+    },
+    {
+        "WT": "Date(1725873945000)",
+        "ST": "Date(1725873945000)",
+        "DT": "Date(1725873945000+0100)",
+        "Value": 71,
+        "Trend": "DoubleDown"
+    }
 ]
 ```
 

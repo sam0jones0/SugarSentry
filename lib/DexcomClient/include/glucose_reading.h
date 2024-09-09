@@ -30,10 +30,16 @@ private:
 
 
 /*
-Glucose reading response from Dexcom API:
+A single glucose reading in JSON:
 
 ```json
-[{'WT': 'Date(1725872445000)', 'ST': 'Date(1725872445000)', 'DT': 'Date(1725872445000+0100)', 'Value': 184, 'Trend': 'FortyFiveDown'}, {'WT': 'Date(1725872145000)', 'ST': 'Date(1725872145000)', 'DT': 'Date(1725872145000+0100)', 'Value': 199, 'Trend': 'Flat'}]
+{
+    "WT": "Date(1725873945000)",
+    "ST": "Date(1725873945000)",
+    "DT": "Date(1725873945000+0100)",
+    "Value": 71,
+    "Trend": "DoubleDown"
+}
 ```
 
 */
