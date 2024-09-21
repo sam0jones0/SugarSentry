@@ -5,6 +5,7 @@
 #include <ctime>
 #include <ArduinoJson.h>
 #include "dexcom_constants.h"
+#include "dexcom_utils.h"
 
 class GlucoseReading
 {
@@ -12,11 +13,11 @@ public:
     explicit GlucoseReading(const JsonObjectConst &jsonGlucoseReading)
     {
         _value = static_cast<uint16_t>(jsonGlucoseReading["Value"].as<int>());
-        _trend = DexcomConst::stringToTrendDirection(jsonGlucoseReading["Trend"].as<const char *>());
+        _trend = DexcomUtils::stringToTrendDirection(jsonGlucoseReading["Trend"].as<const char *>());
 
         const char *wtStr = jsonGlucoseReading["WT"].as<const char *>();
         if (wtStr && *wtStr == 'D')
-        {                                                         
+        {
             _timestamp = strtoull(wtStr + 5, nullptr, 10) / 1000; // milliseconds to seconds
         }
         else

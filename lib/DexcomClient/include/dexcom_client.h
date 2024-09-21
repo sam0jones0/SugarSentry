@@ -117,7 +117,7 @@ Response:
         "DT": "Date(1725873945000+0100)",
         "Value": 71,
         "Trend": "DoubleDown"
-    }
+    },
 ]
 ```
 
