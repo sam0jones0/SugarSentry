@@ -5,14 +5,7 @@ void test_stringToTrendDirection_invalid_inputs();
 void test_glucose_reading_construction();
 void test_glucose_reading_invalid_input();
 void test_sample();
-
-void setUp(void)
-{
-}
-
-void tearDown(void)
-{
-}
+void run_dexcom_client_tests();
 
 int main(int argc, char **argv)
 {
@@ -24,7 +17,7 @@ int main(int argc, char **argv)
     RUN_TEST(test_glucose_reading_construction);
     RUN_TEST(test_glucose_reading_invalid_input);
 
-    RUN_TEST(test_sample);
+    run_dexcom_client_tests();
 
     return UNITY_END();
 }

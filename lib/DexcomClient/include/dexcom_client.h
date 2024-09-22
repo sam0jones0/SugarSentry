@@ -1,10 +1,10 @@
 #ifndef DEXCOM_CLIENT_H
 #define DEXCOM_CLIENT_H
 
-#include <Arduino.h>
-#include <WiFiClientSecure.h>
+#include <ISecureClient.h>
 #include <vector>
 #include <optional>
+#include <string>
 #include "dexcom_constants.h"
 #include "dexcom_errors.h"
 #include "glucose_reading.h"
@@ -12,10 +12,10 @@
 class DexcomClient
 {
 public:
-    DexcomClient(WiFiClientSecure &client,
-                 const String &password,
-                 const String &account_id = "",
-                 const String &username = "",
+    DexcomClient(ISecureClient& client,
+                 const std::string &password,
+                 const std::string &account_id = "",
+                 const std::string &username = "",
                  bool ous = false);
 
     std::vector<GlucoseReading> getGlucoseReadings(uint16_t minutes = DexcomConst::MAX_MINUTES,
@@ -25,25 +25,25 @@ public:
     std::optional<GlucoseReading> getCurrentGlucoseReading();
 
 private:
-    WiFiClientSecure &_client;
-    String _base_url;
-    String _password;
-    String _account_id;
-    String _username;
-    String _session_id;
+    ISecureClient &_client;
+    std::string _base_url;
+    std::string _password;
+    std::string _account_id;
+    std::string _username;
+    std::string _session_id;
 
-    String post(const String &endpoint,
-                const String &params = "",
-                const String &json = "");
+    std::string post(const std::string &endpoint,
+                const std::string &params = "",
+                const std::string &json = "");
 
-    std::optional<DexcomError> handleResponse(const String &response);
+    std::optional<DexcomError> handleResponse(const std::string &response);
 
-    String getAccountId();
-    String getSessionId();
+    std::string getAccountId();
+    std::string getSessionId();
 
     void createSession();
 
-    std::vector<String> getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
+    std::vector<std::string> getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
 };
 
 #endif // DEXCOM_CLIENT_H

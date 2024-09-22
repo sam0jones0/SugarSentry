@@ -1,11 +1,15 @@
 #include "dexcom_client.h"
 #include "dexcom_utils.h"
 #include <ArduinoJson.h>
+#include <ISecureClient.h>
+#include <sstream>
+#include <chrono>
+#include <thread>
 
-DexcomClient::DexcomClient(WiFiClientSecure &client,
-                           const String &password,
-                           const String &account_id,
-                           const String &username,
+DexcomClient::DexcomClient(ISecureClient &client,
+                           const std::string &password,
+                           const std::string &account_id,
+                           const std::string &username,
                            bool ous)
     : _client(client),
       _base_url(ous ? DexcomConst::DEXCOM_BASE_URL_OUS : DexcomConst::DEXCOM_BASE_URL),
@@ -17,10 +21,10 @@ DexcomClient::DexcomClient(WiFiClientSecure &client,
     createSession();
 }
 
-String DexcomClient::post(const String &endpoint, const String &params, const String &json)
+std::string DexcomClient::post(const std::string &endpoint, const std::string &params, const std::string &json)
 {
-    String url = _base_url + "/" + endpoint;
-    if (params.length() > 0)
+    std::string url = _base_url + "/" + endpoint;
+    if (!params.empty())
     {
         url += "?" + params;
     }
@@ -33,44 +37,36 @@ String DexcomClient::post(const String &endpoint, const String &params, const St
         return "Connection failed";
     }
 
-    _client.println("POST " + url + " HTTP/1.1");
-    _client.println("Host: " + String(_base_url));
-    _client.println("Accept-Encoding: application/json");
-    _client.println("Content-Type: application/json");
-    _client.println("Connection: close");
-    if (json.length() > 0)
+    std::ostringstream request;
+    request << "POST " << url << " HTTP/1.1\r\n";
+    request << "Host: " << _base_url << "\r\n";
+    request << "Accept-Encoding: application/json\r\n";
+    request << "Content-Type: application/json\r\n";
+    request << "Connection: close\r\n";
+    if (!json.empty())
     {
-        _client.println("Content-Length: " + String(json.length()));
-        _client.println();
-        _client.println(json);
+        request << "Content-Length: " << json.length() << "\r\n\r\n";
+        request << json << "\r\n";
     }
     else
     {
-        _client.println();
+        request << "\r\n";
     }
 
-    // Wait for the response
-    unsigned long start = millis();
-    while (_client.connected() && !_client.available())
-    {
-        if (millis() - start > TIMEOUT_MS)
-        {
-            _client.stop();
-            return "Response timeout";
-        }
-    }
+    std::string requestStr = request.str();
+    _client.write(reinterpret_cast<const uint8_t *>(requestStr.c_str()), requestStr.length());
 
-    String response;
-    while (_client.available())
+    std::string response;
+    while (_client.connected() && _client.available())
     {
-        response += (char)_client.read();
+        response += static_cast<char>(_client.read());
     }
 
     _client.stop();
     return response;
 }
 
-std::optional<DexcomError> DexcomClient::handleResponse(const String &response)
+std::optional<DexcomError> DexcomClient::handleResponse(const std::string &response)
 {
     constexpr size_t ERROR_JSON_SIZE = 512;
     StaticJsonDocument<ERROR_JSON_SIZE> doc;
@@ -125,10 +121,10 @@ std::optional<DexcomError> DexcomClient::handleResponse(const String &response)
     return std::nullopt;
 }
 
-String DexcomClient::getAccountId()
+std::string DexcomClient::getAccountId()
 {
-    String json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
-    String response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
+    std::string json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
+    std::string response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
 
     auto error = handleResponse(response);
     if (error)
@@ -139,10 +135,10 @@ String DexcomClient::getAccountId()
     return response;
 }
 
-String DexcomClient::getSessionId()
+std::string DexcomClient::getSessionId()
 {
-    String json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
-    String response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
+    std::string json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
+    std::string response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
 
     auto error = handleResponse(response);
     if (error)
@@ -162,23 +158,23 @@ void DexcomClient::createSession()
     {
         try
         {
-            if (_account_id.isEmpty())
+            if (_account_id.empty())
             {
-                if (_username.isEmpty())
+                if (_username.empty())
                 {
                     throw ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
                 }
                 _account_id = getAccountId();
             }
 
-            if (_account_id.isEmpty() || _account_id == DexcomConst::DEFAULT_UUID)
+            if (_account_id.empty() || _account_id == DexcomConst::DEFAULT_UUID)
             {
                 throw ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
             }
 
             _session_id = getSessionId();
 
-            if (_session_id.isEmpty() || _session_id == DexcomConst::DEFAULT_UUID)
+            if (_session_id.empty() || _session_id == DexcomConst::DEFAULT_UUID)
             {
                 throw ArgumentError(DexcomErrors::ArgumentError::SESSION_ID_INVALID);
             }
@@ -193,12 +189,12 @@ void DexcomClient::createSession()
             {
                 throw; // rethrow last error if exhausted retries
             }
-            delay(1000 * retries);
+            std::this_thread::sleep_for(std::chrono::seconds(retries));
         }
     }
 }
 
-std::vector<String> DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_count)
+std::vector<std::string> DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_count)
 {
     if (minutes == 0 || minutes > DexcomConst::MAX_MINUTES)
     {
@@ -209,8 +205,8 @@ std::vector<String> DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16
         throw ArgumentError(DexcomErrors::ArgumentError::MAX_COUNT_INVALID);
     }
 
-    String params = "sessionId=" + _session_id + "&minutes=" + String(minutes) + "&maxCount=" + String(max_count);
-    String response = post(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT, params);
+    std::string params = "sessionId=" + _session_id + "&minutes=" + std::to_string(minutes) + "&maxCount=" + std::to_string(max_count);
+    std::string response = post(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT, params);
 
     auto error = handleResponse(response);
     if (error)
@@ -224,7 +220,7 @@ std::vector<String> DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16
         throw ArgumentError(DexcomErrors::ArgumentError::RESPONSE_TOO_LARGE);
     }
 
-    std::vector<String> readings;
+    std::vector<std::string> readings;
     constexpr size_t JSON_BUFFER_SIZE = 40960; // TODO: DynamicJsonDocument? Currently 40kb is max theoretical size. This is wasteful for smaller requests.
     StaticJsonDocument<JSON_BUFFER_SIZE> doc;
     DeserializationError err = deserializeJson(doc, response);
@@ -238,7 +234,7 @@ std::vector<String> DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16
     readings.reserve(array.size());
     for (JsonVariant v : array)
     {
-        readings.push_back(v.as<String>());
+        readings.push_back(v.as<std::string>());
     }
 
     return readings;
@@ -248,7 +244,8 @@ std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, u
 {
     std::vector<GlucoseReading> readings;
 
-    auto processRawReadings = [this, &readings](const std::vector<String>& raw_readings) {
+    auto processRawReadings = [this, &readings](const std::vector<std::string> &raw_readings)
+    {
         for (const auto &raw : raw_readings)
         {
             StaticJsonDocument<DexcomConst::MAX_READING_JSON_SIZE> doc;
