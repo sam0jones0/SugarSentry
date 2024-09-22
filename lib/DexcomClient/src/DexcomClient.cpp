@@ -155,25 +155,46 @@ String DexcomClient::getSessionId()
 
 void DexcomClient::createSession()
 {
-    if (_account_id.isEmpty())
+    constexpr int MAX_RETRIES = 3;
+    int retries = 0;
+
+    while (retries < MAX_RETRIES)
     {
-        if (_username.isEmpty())
+        try
         {
-            throw ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
+            if (_account_id.isEmpty())
+            {
+                if (_username.isEmpty())
+                {
+                    throw ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
+                }
+                _account_id = getAccountId();
+            }
+
+            if (_account_id.isEmpty() || _account_id == DexcomConst::DEFAULT_UUID)
+            {
+                throw ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
+            }
+
+            _session_id = getSessionId();
+
+            if (_session_id.isEmpty() || _session_id == DexcomConst::DEFAULT_UUID)
+            {
+                throw ArgumentError(DexcomErrors::ArgumentError::SESSION_ID_INVALID);
+            }
+
+            // session creation was successful
+            return;
         }
-        _account_id = getAccountId();
-    }
-
-    if (_account_id.isEmpty() || _account_id == DexcomConst::DEFAULT_UUID)
-    {
-        throw ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
-    }
-
-    _session_id = getSessionId();
-
-    if (_session_id.isEmpty() || _session_id == DexcomConst::DEFAULT_UUID)
-    {
-        throw ArgumentError(DexcomErrors::ArgumentError::SESSION_ID_INVALID);
+        catch (const DexcomError &e)
+        {
+            retries++;
+            if (retries >= MAX_RETRIES)
+            {
+                throw; // rethrow last error if exhausted retries
+            }
+            delay(1000 * retries);
+        }
     }
 }
 
@@ -197,8 +218,14 @@ std::vector<String> DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16
         throw *error;
     }
 
+    constexpr size_t MAX_RESPONSE_SIZE = 100000; // Adjust this value as needed
+    if (response.length() > MAX_RESPONSE_SIZE)
+    {
+        throw ArgumentError(DexcomErrors::ArgumentError::RESPONSE_TOO_LARGE);
+    }
+
     std::vector<String> readings;
-    constexpr size_t JSON_BUFFER_SIZE = 40960; // 40 KB
+    constexpr size_t JSON_BUFFER_SIZE = 40960; // TODO: DynamicJsonDocument? Currently 40kb is max theoretical size. This is wasteful for smaller requests.
     StaticJsonDocument<JSON_BUFFER_SIZE> doc;
     DeserializationError err = deserializeJson(doc, response);
 
@@ -208,7 +235,7 @@ std::vector<String> DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16
     }
 
     JsonArray array = doc.as<JsonArray>();
-    readings.reserve(array.size()); // Optimize memory allocation
+    readings.reserve(array.size());
     for (JsonVariant v : array)
     {
         readings.push_back(v.as<String>());
@@ -221,9 +248,7 @@ std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, u
 {
     std::vector<GlucoseReading> readings;
 
-    try
-    {
-        auto raw_readings = getGlucoseReadingsRaw(minutes, max_count);
+    auto processRawReadings = [this, &readings](const std::vector<String>& raw_readings) {
         for (const auto &raw : raw_readings)
         {
             StaticJsonDocument<DexcomConst::MAX_READING_JSON_SIZE> doc;
@@ -233,20 +258,18 @@ std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, u
                 readings.emplace_back(doc.as<JsonObjectConst>());
             }
         }
+    };
+
+    try
+    {
+        auto raw_readings = getGlucoseReadingsRaw(minutes, max_count);
+        processRawReadings(raw_readings);
     }
     catch (SessionError &)
     {
         createSession();
         auto raw_readings = getGlucoseReadingsRaw(minutes, max_count);
-        for (const auto &raw : raw_readings)
-        {
-            StaticJsonDocument<DexcomConst::MAX_READING_JSON_SIZE> doc;
-            DeserializationError err = deserializeJson(doc, raw);
-            if (!err)
-            {
-                readings.emplace_back(doc.as<JsonObjectConst>());
-            }
-        }
+        processRawReadings(raw_readings);
     }
 
     return readings;

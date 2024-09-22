@@ -15,7 +15,7 @@ namespace DexcomErrors
     enum class SessionError : uint8_t
     {
         NOT_FOUND,
-        INVALID
+        INVALID,
     };
 
     enum class ArgumentError : uint8_t
@@ -30,7 +30,8 @@ namespace DexcomErrors
         ACCOUNT_ID_DEFAULT,
         SESSION_ID_INVALID,
         SESSION_ID_DEFAULT,
-        GLUCOSE_READING_INVALID
+        GLUCOSE_READING_INVALID,
+        RESPONSE_TOO_LARGE
     };
 
 }
