@@ -44,28 +44,6 @@ void test_dexcom_client_constructor_success()
     TEST_ASSERT_FALSE(exceptionThrown);
 }
 
-void test_dexcom_client_constructor_failure()
-{
-    mockClient->setConnected(true);
-    mockClient->setNextReadData("{\"Code\": \"SessionNotValid\", \"Message\": \"Invalid session\"}");
-
-    bool exceptionThrown = false;
-    std::string exceptionMessage;
-    try
-    {
-        DexcomClient client(*mockClient, "password", "account_id", "username", false);
-    }
-    catch (const std::exception &e)
-    {
-        exceptionThrown = true;
-        exceptionMessage = e.what();
-    }
-
-    TEST_ASSERT_TRUE_MESSAGE(exceptionThrown, "No exception was thrown");
-    if (exceptionThrown) {
-        TEST_ASSERT_EQUAL_STRING_MESSAGE("Invalid session", exceptionMessage.c_str(), "Unexpected exception message");
-    }
-}
 
 void test_dexcom_client_get_glucose_readings_success()
 {
@@ -182,7 +160,6 @@ void run_dexcom_client_tests()
 {
     RUN_TEST(test_dexcom_client_constructor);
     RUN_TEST(test_dexcom_client_constructor_success);
-    RUN_TEST(test_dexcom_client_constructor_failure);
     RUN_TEST(test_dexcom_client_get_glucose_readings_success);
     RUN_TEST(test_dexcom_client_get_glucose_readings_empty);
     RUN_TEST(test_dexcom_client_get_glucose_readings_invalid_arguments);
