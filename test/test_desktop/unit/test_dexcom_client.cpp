@@ -188,14 +188,14 @@ void test_dexcom_client_get_glucose_readings_max_size()
 
 void run_dexcom_client_tests()
 {
-    // RUN_TEST(test_dexcom_client_constructor);
+    RUN_TEST(test_dexcom_client_constructor);
     RUN_TEST(test_dexcom_client_get_glucose_readings_max_size);
-    // RUN_TEST(test_dexcom_client_constructor_success);
-    // RUN_TEST(test_dexcom_client_get_glucose_readings_success);
-    // RUN_TEST(test_dexcom_client_get_glucose_readings_empty);
-    // RUN_TEST(test_dexcom_client_get_glucose_readings_invalid_arguments);
-    // RUN_TEST(test_dexcom_client_get_latest_glucose_reading_success);
-    // RUN_TEST(test_dexcom_client_get_latest_glucose_reading_empty);
-    // RUN_TEST(test_dexcom_client_get_current_glucose_reading_success);
-    // RUN_TEST(test_dexcom_client_get_current_glucose_reading_empty);
+    RUN_TEST(test_dexcom_client_constructor_success);
+    RUN_TEST(test_dexcom_client_get_glucose_readings_success);
+    RUN_TEST(test_dexcom_client_get_glucose_readings_empty);
+    RUN_TEST(test_dexcom_client_get_glucose_readings_invalid_arguments);
+    RUN_TEST(test_dexcom_client_get_latest_glucose_reading_success);
+    RUN_TEST(test_dexcom_client_get_latest_glucose_reading_empty);
+    RUN_TEST(test_dexcom_client_get_current_glucose_reading_success);
+    RUN_TEST(test_dexcom_client_get_current_glucose_reading_empty);
 }
