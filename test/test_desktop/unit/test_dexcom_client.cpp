@@ -44,13 +44,12 @@ void test_dexcom_client_constructor_success()
     TEST_ASSERT_FALSE(exceptionThrown);
 }
 
-
 void test_dexcom_client_get_glucose_readings_success()
 {
     mockClient->setConnected(true);
     mockClient->setNextReadData("[{\"WT\": \"Date(1625874245000)\", \"ST\": \"Date(1625874245000)\", \"DT\": \"Date(1625874245000+0100)\", \"Value\": 120, \"Trend\": \"Flat\"}, {\"WT\": \"Date(1625873945000)\", \"ST\": \"Date(1625873945000)\", \"DT\": \"Date(1625873945000+0100)\", \"Value\": 118, \"Trend\": \"FortyFiveUp\"}]");
 
-    auto readings = dexcomClient->getGlucoseReadings();
+    auto readings = dexcomClient->get_glucose_readings();
     TEST_ASSERT_EQUAL(2, readings.size());
     TEST_ASSERT_EQUAL(120, readings[0].getValue());
     TEST_ASSERT_EQUAL(DexcomConst::TrendDirection::Flat, readings[0].getTrend());
@@ -63,7 +62,7 @@ void test_dexcom_client_get_glucose_readings_empty()
     mockClient->setConnected(true);
     mockClient->setNextReadData("[]");
 
-    auto readings = dexcomClient->getGlucoseReadings();
+    auto readings = dexcomClient->get_glucose_readings();
     TEST_ASSERT_EQUAL(0, readings.size());
 }
 
@@ -74,7 +73,7 @@ void test_dexcom_client_get_glucose_readings_invalid_arguments()
     exceptionThrown = false;
     try
     {
-        dexcomClient->getGlucoseReadings(0, 1);
+        dexcomClient->get_glucose_readings(0, 1);
     }
     catch (const ArgumentError &)
     {
@@ -85,7 +84,7 @@ void test_dexcom_client_get_glucose_readings_invalid_arguments()
     exceptionThrown = false;
     try
     {
-        dexcomClient->getGlucoseReadings(1, 0);
+        dexcomClient->get_glucose_readings(1, 0);
     }
     catch (const ArgumentError &)
     {
@@ -96,7 +95,7 @@ void test_dexcom_client_get_glucose_readings_invalid_arguments()
     exceptionThrown = false;
     try
     {
-        dexcomClient->getGlucoseReadings(DexcomConst::MAX_MINUTES + 1, 1);
+        dexcomClient->get_glucose_readings(DexcomConst::MAX_MINUTES + 1, 1);
     }
     catch (const ArgumentError &)
     {
@@ -107,7 +106,7 @@ void test_dexcom_client_get_glucose_readings_invalid_arguments()
     exceptionThrown = false;
     try
     {
-        dexcomClient->getGlucoseReadings(1, DexcomConst::MAX_MAX_COUNT + 1);
+        dexcomClient->get_glucose_readings(1, DexcomConst::MAX_MAX_COUNT + 1);
     }
     catch (const ArgumentError &)
     {

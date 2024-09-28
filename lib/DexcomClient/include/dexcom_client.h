@@ -12,14 +12,14 @@
 class DexcomClient
 {
 public:
-    DexcomClient(ISecureClient& client,
+    DexcomClient(ISecureClient &client,
                  const std::string &password,
                  const std::string &account_id = "",
                  const std::string &username = "",
                  bool ous = false);
 
-    std::vector<GlucoseReading> getGlucoseReadings(uint16_t minutes = DexcomConst::MAX_MINUTES,
-                                                   uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
+    std::vector<GlucoseReading> get_glucose_readings(uint16_t minutes = DexcomConst::MAX_MINUTES,
+                                                     uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
 
     std::optional<GlucoseReading> getLatestGlucoseReading();
     std::optional<GlucoseReading> getCurrentGlucoseReading();
@@ -33,8 +33,8 @@ private:
     std::string _session_id;
 
     std::string post(const std::string &endpoint,
-                const std::string &params = "",
-                const std::string &json = "");
+                     const std::string &params = "",
+                     const std::string &json = "");
 
     std::optional<DexcomError> handleResponse(const std::string &response);
 
@@ -43,7 +43,7 @@ private:
 
     void createSession();
 
-    std::vector<std::string> getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
+    std::vector<std::string> get_glucose_readingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
 };
 
 #endif // DEXCOM_CLIENT_H
@@ -87,7 +87,7 @@ Response:
 "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz"
 ```
 
-3. getGlucoseReadings
+3. get_glucose_readings
 
 Request:
 ```
@@ -131,7 +131,7 @@ Flow:
    - Input: Account ID (from step 1), password, and application ID
    - Output: Session ID
 
-3. getGlucoseReadings:
+3. get_glucose_readings:
    - Input: Session ID (from step 2), time range (minutes), and max count of readings
    - Output: Array of glucose readings, each containing:
      - DT: Device Time
