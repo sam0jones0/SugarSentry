@@ -214,7 +214,8 @@ std::vector<std::string> DexcomClient::get_glucose_readingsRaw(uint16_t minutes,
         throw *error;
     }
 
-    constexpr size_t MAX_RESPONSE_SIZE = 100000;
+    // API response of MAX_MAX_COUNT readings is 35713 bytes
+    constexpr size_t MAX_RESPONSE_SIZE = 50000;   
     if (response.length() > MAX_RESPONSE_SIZE)
     {
         throw ArgumentError(DexcomErrors::ArgumentError::RESPONSE_TOO_LARGE);
@@ -223,8 +224,8 @@ std::vector<std::string> DexcomClient::get_glucose_readingsRaw(uint16_t minutes,
     std::vector<std::string> readings;
     DynamicJsonDocument doc(response.length() * 3);
     // printf("\n%zu\n", response.length`());
-    // So in the max_size test we found 35713 (35 KB), which means we're allocating 107 KB
-    // for a max_size json. Which is probably too large. Might have to stream this data.
+    // Max response ~36KB (288 readings). Allocate 3x for DynamicJsonDocument (108KB) to
+    // ensure parsing capacity.
     DeserializationError err = deserializeJson(doc, response);
 
     if (err)
