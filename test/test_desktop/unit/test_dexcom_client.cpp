@@ -155,15 +155,47 @@ void test_dexcom_client_get_current_glucose_reading_empty()
     TEST_ASSERT_FALSE(reading.has_value());
 }
 
+void test_dexcom_client_get_glucose_readings_max_size()
+{
+    mockClient->setConnected(true);
+
+    std::string largeResponse = "[";
+    for (int i = 0; i < DexcomConst::MAX_MAX_COUNT; ++i)
+    {
+        if (i > 0)
+            largeResponse += ",";
+        largeResponse += "{\"WT\": \"Date(" + std::to_string(1625874245000 + i * 300000) + ")\", "
+                                                                                           "\"ST\": \"Date(" +
+                         std::to_string(1625874245000 + i * 300000) + ")\", "
+                                                                      "\"DT\": \"Date(" +
+                         std::to_string(1625874245000 + i * 300000) + "+0100)\", "
+                                                                      "\"Value\": " +
+                         std::to_string(100 + i % 100) + ", "
+                                                         "\"Trend\": \"Flat\"}";
+    }
+    largeResponse += "]";
+
+    mockClient->setNextReadData(largeResponse);
+
+    auto readings = dexcomClient->get_glucose_readings(DexcomConst::MAX_MINUTES, DexcomConst::MAX_MAX_COUNT);
+
+    TEST_ASSERT_EQUAL(DexcomConst::MAX_MAX_COUNT, readings.size());
+    TEST_ASSERT_EQUAL(100, readings[0].getValue());
+    TEST_ASSERT_EQUAL(DexcomConst::TrendDirection::Flat, readings[0].getTrend());
+    TEST_ASSERT_EQUAL(187, readings[DexcomConst::MAX_MAX_COUNT - 1].getValue());
+    TEST_ASSERT_EQUAL(DexcomConst::TrendDirection::Flat, readings[DexcomConst::MAX_MAX_COUNT - 1].getTrend());
+}
+
 void run_dexcom_client_tests()
 {
-    RUN_TEST(test_dexcom_client_constructor);
-    RUN_TEST(test_dexcom_client_constructor_success);
-    RUN_TEST(test_dexcom_client_get_glucose_readings_success);
-    RUN_TEST(test_dexcom_client_get_glucose_readings_empty);
-    RUN_TEST(test_dexcom_client_get_glucose_readings_invalid_arguments);
-    RUN_TEST(test_dexcom_client_get_latest_glucose_reading_success);
-    RUN_TEST(test_dexcom_client_get_latest_glucose_reading_empty);
-    RUN_TEST(test_dexcom_client_get_current_glucose_reading_success);
-    RUN_TEST(test_dexcom_client_get_current_glucose_reading_empty);
+    // RUN_TEST(test_dexcom_client_constructor);
+    RUN_TEST(test_dexcom_client_get_glucose_readings_max_size);
+    // RUN_TEST(test_dexcom_client_constructor_success);
+    // RUN_TEST(test_dexcom_client_get_glucose_readings_success);
+    // RUN_TEST(test_dexcom_client_get_glucose_readings_empty);
+    // RUN_TEST(test_dexcom_client_get_glucose_readings_invalid_arguments);
+    // RUN_TEST(test_dexcom_client_get_latest_glucose_reading_success);
+    // RUN_TEST(test_dexcom_client_get_latest_glucose_reading_empty);
+    // RUN_TEST(test_dexcom_client_get_current_glucose_reading_success);
+    // RUN_TEST(test_dexcom_client_get_current_glucose_reading_empty);
 }

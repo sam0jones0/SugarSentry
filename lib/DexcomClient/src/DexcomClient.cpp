@@ -214,15 +214,17 @@ std::vector<std::string> DexcomClient::get_glucose_readingsRaw(uint16_t minutes,
         throw *error;
     }
 
-    constexpr size_t MAX_RESPONSE_SIZE = 100000; // Adjust this value as needed
+    constexpr size_t MAX_RESPONSE_SIZE = 100000;
     if (response.length() > MAX_RESPONSE_SIZE)
     {
         throw ArgumentError(DexcomErrors::ArgumentError::RESPONSE_TOO_LARGE);
     }
 
     std::vector<std::string> readings;
-    constexpr size_t JSON_BUFFER_SIZE = 40960; // TODO: DynamicJsonDocument? Currently 40kb is max theoretical size. This is wasteful for smaller requests.
-    StaticJsonDocument<JSON_BUFFER_SIZE> doc;
+    DynamicJsonDocument doc(response.length() * 3);
+    // printf("\n%zu\n", response.length`());
+    // So in the max_size test we found 35713 (35 KB), which means we're allocating 107 KB
+    // for a max_size json. Which is probably too large. Might have to stream this data.
     DeserializationError err = deserializeJson(doc, response);
 
     if (err)
