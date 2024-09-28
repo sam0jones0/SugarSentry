@@ -186,10 +186,40 @@ void test_dexcom_client_get_glucose_readings_max_size()
     TEST_ASSERT_EQUAL(DexcomConst::TrendDirection::Flat, readings[DexcomConst::MAX_MAX_COUNT - 1].getTrend());
 }
 
+void test_dexcom_client_parse_glucose_readings()
+{
+    std::string jsonResponse = "[{\"WT\": \"Date(1625874245000)\", \"ST\": \"Date(1625874245000)\", \"DT\": \"Date(1625874245000+0100)\", \"Value\": 120, \"Trend\": \"Flat\"}, {\"WT\": \"Date(1625873945000)\", \"ST\": \"Date(1625873945000)\", \"DT\": \"Date(1625873945000+0100)\", \"Value\": 118, \"Trend\": \"FortyFiveUp\"}]";
+
+    auto readings = dexcomClient->parseGlucoseReadings(jsonResponse);
+
+    TEST_ASSERT_EQUAL(2, readings.size());
+    TEST_ASSERT_EQUAL(120, readings[0].getValue());
+    TEST_ASSERT_EQUAL(DexcomConst::TrendDirection::Flat, readings[0].getTrend());
+    TEST_ASSERT_EQUAL(118, readings[1].getValue());
+    TEST_ASSERT_EQUAL(DexcomConst::TrendDirection::FortyFiveUp, readings[1].getTrend());
+}
+
+void test_dexcom_client_parse_glucose_readings_empty()
+{
+    std::string jsonResponse = "[]";
+
+    auto readings = dexcomClient->parseGlucoseReadings(jsonResponse);
+
+    TEST_ASSERT_EQUAL(0, readings.size());
+}
+
+void test_dexcom_client_parse_glucose_readings_invalid_json()
+{
+    std::string jsonResponse = "This is not valid JSON";
+
+    auto readings = dexcomClient->parseGlucoseReadings(jsonResponse);
+
+    TEST_ASSERT_EQUAL(0, readings.size());
+}
+
 void run_dexcom_client_tests()
 {
     RUN_TEST(test_dexcom_client_constructor);
-    RUN_TEST(test_dexcom_client_get_glucose_readings_max_size);
     RUN_TEST(test_dexcom_client_constructor_success);
     RUN_TEST(test_dexcom_client_get_glucose_readings_success);
     RUN_TEST(test_dexcom_client_get_glucose_readings_empty);
@@ -198,4 +228,8 @@ void run_dexcom_client_tests()
     RUN_TEST(test_dexcom_client_get_latest_glucose_reading_empty);
     RUN_TEST(test_dexcom_client_get_current_glucose_reading_success);
     RUN_TEST(test_dexcom_client_get_current_glucose_reading_empty);
+    RUN_TEST(test_dexcom_client_get_glucose_readings_max_size);
+    RUN_TEST(test_dexcom_client_parse_glucose_readings);
+    RUN_TEST(test_dexcom_client_parse_glucose_readings_empty);
+    RUN_TEST(test_dexcom_client_parse_glucose_readings_invalid_json);
 }

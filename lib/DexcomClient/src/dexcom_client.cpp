@@ -194,7 +194,60 @@ void DexcomClient::createSession()
     }
 }
 
-std::vector<std::string> DexcomClient::get_glucose_readingsRaw(uint16_t minutes, uint16_t max_count)
+std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string &response)
+{
+    std::vector<GlucoseReading> readings;
+    readings.reserve(DexcomConst::MAX_MAX_COUNT);
+
+    StaticJsonDocument<256> doc;
+    size_t pos = 0;
+    while (pos < response.length())
+    {
+        size_t start = response.find('{', pos);
+        if (start == std::string::npos)
+            break;
+
+        size_t end = response.find('}', start);
+        if (end == std::string::npos)
+            break;
+
+        std::string jsonObject = response.substr(start, end - start + 1);
+        DeserializationError err = deserializeJson(doc, jsonObject);
+        if (err == DeserializationError::Ok)
+        {
+            readings.emplace_back(doc.as<JsonObjectConst>());
+        }
+        doc.clear();
+        pos = end + 1;
+    }
+
+    return readings;
+}
+
+std::vector<GlucoseReading> DexcomClient::get_glucose_readings(uint16_t minutes, uint16_t max_count)
+{
+    std::vector<GlucoseReading> readings;
+
+    auto fetchAndParseReadings = [this, minutes, max_count, &readings]()
+    {
+        std::string response = get_glucose_readingsRaw(minutes, max_count);
+        readings = parseGlucoseReadings(response);
+    };
+
+    try
+    {
+        fetchAndParseReadings();
+    }
+    catch (SessionError &)
+    {
+        createSession();
+        fetchAndParseReadings();
+    }
+
+    return readings;
+}
+
+std::string DexcomClient::get_glucose_readingsRaw(uint16_t minutes, uint16_t max_count)
 {
     if (minutes == 0 || minutes > DexcomConst::MAX_MINUTES)
     {
@@ -214,65 +267,7 @@ std::vector<std::string> DexcomClient::get_glucose_readingsRaw(uint16_t minutes,
         throw *error;
     }
 
-    // API response of MAX_MAX_COUNT readings is 35713 bytes
-    constexpr size_t MAX_RESPONSE_SIZE = 50000;   
-    if (response.length() > MAX_RESPONSE_SIZE)
-    {
-        throw ArgumentError(DexcomErrors::ArgumentError::RESPONSE_TOO_LARGE);
-    }
-
-    std::vector<std::string> readings;
-    DynamicJsonDocument doc(response.length() * 3);
-    // printf("\n%zu\n", response.length`());
-    // Max response ~36KB (288 readings). Allocate 3x for DynamicJsonDocument (108KB) to
-    // ensure parsing capacity.
-    DeserializationError err = deserializeJson(doc, response);
-
-    if (err)
-    {
-        return readings;
-    }
-
-    JsonArray array = doc.as<JsonArray>();
-    readings.reserve(array.size());
-    for (JsonVariant v : array)
-    {
-        readings.push_back(v.as<std::string>());
-    }
-
-    return readings;
-}
-
-std::vector<GlucoseReading> DexcomClient::get_glucose_readings(uint16_t minutes, uint16_t max_count)
-{
-    std::vector<GlucoseReading> readings;
-
-    auto processRawReadings = [this, &readings](const std::vector<std::string> &raw_readings)
-    {
-        for (const auto &raw : raw_readings)
-        {
-            StaticJsonDocument<DexcomConst::MAX_READING_JSON_SIZE> doc;
-            DeserializationError err = deserializeJson(doc, raw);
-            if (!err)
-            {
-                readings.emplace_back(doc.as<JsonObjectConst>());
-            }
-        }
-    };
-
-    try
-    {
-        auto raw_readings = get_glucose_readingsRaw(minutes, max_count);
-        processRawReadings(raw_readings);
-    }
-    catch (SessionError &)
-    {
-        createSession();
-        auto raw_readings = get_glucose_readingsRaw(minutes, max_count);
-        processRawReadings(raw_readings);
-    }
-
-    return readings;
+    return response;
 }
 
 std::optional<GlucoseReading> DexcomClient::getLatestGlucoseReading()
