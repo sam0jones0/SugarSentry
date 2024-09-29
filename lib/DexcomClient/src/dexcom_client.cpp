@@ -77,41 +77,41 @@ std::optional<DexcomError> DexcomClient::handleResponse(const std::string &respo
         return std::nullopt;
     }
 
-    const char *code = doc["Code"];
-    const char *message = doc["Message"];
+    std::string code = doc["Code"].as<std::string>();
+    std::string message = doc["Message"].as<std::string>();
 
-    if (code)
+    if (!code.empty())
     {
-        if (strcmp(code, "SessionIdNotFound") == 0)
+        if (code == "SessionIdNotFound")
         {
             return SessionError(DexcomErrors::SessionError::NOT_FOUND);
         }
-        else if (strcmp(code, "SessionNotValid") == 0)
+        else if (code == "SessionNotValid")
         {
             return SessionError(DexcomErrors::SessionError::INVALID);
         }
-        else if (strcmp(code, "SSO_AuthenticateMaxAttemptsExceeed") == 0)
+        else if (code == "SSO_AuthenticateMaxAttemptsExceeed")
         {
             return AccountError(DexcomErrors::AccountError::MAX_ATTEMPTS);
         }
-        else if (strcmp(code, "SSO_InternalError") == 0)
+        else if (code == "SSO_InternalError")
         {
-            if (message && strstr(message, "Cannot Authenticate"))
+            if (message.find("Cannot Authenticate") != std::string::npos)
             {
                 return AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
             }
         }
-        else if (strcmp(code, "InvalidArgument") == 0)
+        else if (code == "InvalidArgument")
         {
-            if (message && strstr(message, "accountName"))
+            if (message.find("accountName") != std::string::npos)
             {
                 return ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
             }
-            else if (message && strstr(message, "password"))
+            else if (message.find("password") != std::string::npos)
             {
                 return ArgumentError(DexcomErrors::ArgumentError::PASSWORD_INVALID);
             }
-            else if (message && strstr(message, "UUID"))
+            else if (message.find("UUID") != std::string::npos)
             {
                 return ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
             }
