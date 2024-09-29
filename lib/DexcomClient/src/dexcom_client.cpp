@@ -56,10 +56,15 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
     std::string requestStr = request.str();
     _client.write(reinterpret_cast<const uint8_t *>(requestStr.c_str()), requestStr.length());
 
+    constexpr size_t BUFFER_SIZE = 1024;
+    char buffer[BUFFER_SIZE];
     std::string response;
-    while (_client.connected() && _client.available())
+    size_t bytesRead;
+
+    while (_client.connected() && (bytesRead = _client.read(reinterpret_cast<uint8_t *>(buffer), BUFFER_SIZE - 1)) > 0)
     {
-        response += static_cast<char>(_client.read());
+        buffer[bytesRead] = '\0';
+        response.append(buffer);
     }
 
     _client.stop();
