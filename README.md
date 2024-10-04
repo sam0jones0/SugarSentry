@@ -4,11 +4,11 @@
 > 
 > This project is currently under active development and is not yet ready for production use.
 
-ESP32-based portable blood glucose monitor with e-ink display. Inspired by gagebenne/pydexcom and lmarzen/esp32-weather-epd.
+ESP32-based ambient blood glucose visualisation device with e-ink display. Inspired by gagebenne/pydexcom and lmarzen/esp32-weather-epd.
 
 ## Description
 
-SugarSentry is a portable device that displays blood sugar levels from the Dexcom API, shows historical data in a graph, and also monitors room temperature and humidity (because why not). The device uses an e-ink display for low power consumption and long battery life. For nighttime use, it features a proximity-activated RGB LED that dimly indicates the current blood sugar level.
+SugarSentry is a stylish, bedside/desktop device that displays blood sugar levels from the Dexcom API, shows historical data in a graph, and also monitors room temperature and humidity. The device uses an e-ink display for low power consumption and extended battery life. For nighttime use, it features a proximity-activated RGB LED that dimly indicates the current blood sugar level.
 
 ## Key Features
 
@@ -16,8 +16,8 @@ SugarSentry is a portable device that displays blood sugar levels from the Dexco
 - 🔄 Shows historical glucose data in graph form
 - 🔄 Monitors room temperature and humidity (BME280 sensor)
 - 🔄 Detects proximity (VCNL4040 sensor)
-- 🔄 Low power consumption with e-ink display
-- 🔄 Portable design with LiPo battery
+- 🔄 Highly power-efficient with e-ink display
+- 🔄 Battery-powered with recharging circuits for flexibility
 - 🔄 Proximity-activated RGB LED for nighttime glucose level indication
 
 ## Hardware
@@ -33,7 +33,7 @@ SugarSentry is a portable device that displays blood sugar levels from the Dexco
 
 - Written in C++
 - Compatible with Arduino IDE and PlatformIO
-- Developed with focus on low power consumption and memory optimization
+- Developed with focus on power efficiency and memory optimization
 
 ## License
 
