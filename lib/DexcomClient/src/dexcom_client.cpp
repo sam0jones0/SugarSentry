@@ -21,6 +21,114 @@ DexcomClient::DexcomClient(ISecureClient &client,
     createSession();
 }
 
+std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, uint16_t max_count)
+{
+    std::vector<GlucoseReading> readings;
+
+    auto fetchAndParseReadings = [this, minutes, max_count, &readings]()
+    {
+        std::string response = getGlucoseReadingsRaw(minutes, max_count);
+        readings = parseGlucoseReadings(response);
+    };
+
+    try
+    {
+        fetchAndParseReadings();
+    }
+    catch (SessionError &)
+    {
+        createSession();
+        fetchAndParseReadings();
+    }
+
+    return readings;
+}
+
+std::optional<GlucoseReading> DexcomClient::getLatestGlucoseReading()
+{
+    auto readings = getGlucoseReadings(DexcomConst::MAX_MINUTES, 1);
+    return readings.empty() ? std::nullopt : std::make_optional(readings[0]);
+}
+
+std::optional<GlucoseReading> DexcomClient::getCurrentGlucoseReading()
+{
+    auto readings = getGlucoseReadings(10, 1);
+    return readings.empty() ? std::nullopt : std::make_optional(readings[0]);
+}
+
+void DexcomClient::createSession()
+{
+    constexpr int MAX_RETRIES = 3;
+    int retries = 0;
+
+    while (retries < MAX_RETRIES)
+    {
+        try
+        {
+            if (_account_id.empty())
+            {
+                if (_username.empty())
+                {
+                    throw ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
+                }
+                _account_id = getAccountId();
+            }
+
+            if (_account_id.empty() || _account_id == DexcomConst::DEFAULT_UUID)
+            {
+                throw ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
+            }
+
+            _session_id = getSessionId();
+
+            if (_session_id.empty() || _session_id == DexcomConst::DEFAULT_UUID)
+            {
+                throw ArgumentError(DexcomErrors::ArgumentError::SESSION_ID_INVALID);
+            }
+
+            // session creation was successful
+            return;
+        }
+        catch (const DexcomError &e)
+        {
+            retries++;
+            if (retries >= MAX_RETRIES)
+            {
+                throw; // rethrow last error if exhausted retries
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(retries));
+        }
+    }
+}
+
+std::string DexcomClient::getAccountId()
+{
+    std::string json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
+    std::string response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
+
+    auto error = handleResponse(response);
+    if (error)
+    {
+        throw *error;
+    }
+
+    return response;
+}
+
+std::string DexcomClient::getSessionId()
+{
+    std::string json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
+    std::string response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
+
+    auto error = handleResponse(response);
+    if (error)
+    {
+        throw *error;
+    }
+
+    return response;
+}
+
 std::string DexcomClient::post(const std::string &endpoint, const std::string &params, const std::string &json)
 {
     std::string url = _base_url + "/" + endpoint;
@@ -126,10 +234,19 @@ std::optional<DexcomError> DexcomClient::handleResponse(const std::string &respo
     return std::nullopt;
 }
 
-std::string DexcomClient::getAccountId()
+std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_count)
 {
-    std::string json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
-    std::string response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
+    if (minutes == 0 || minutes > DexcomConst::MAX_MINUTES)
+    {
+        throw ArgumentError(DexcomErrors::ArgumentError::MINUTES_INVALID);
+    }
+    if (max_count == 0 || max_count > DexcomConst::MAX_MAX_COUNT)
+    {
+        throw ArgumentError(DexcomErrors::ArgumentError::MAX_COUNT_INVALID);
+    }
+
+    std::string params = "sessionId=" + _session_id + "&minutes=" + std::to_string(minutes) + "&maxCount=" + std::to_string(max_count);
+    std::string response = post(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT, params);
 
     auto error = handleResponse(response);
     if (error)
@@ -138,65 +255,6 @@ std::string DexcomClient::getAccountId()
     }
 
     return response;
-}
-
-std::string DexcomClient::getSessionId()
-{
-    std::string json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
-    std::string response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
-
-    auto error = handleResponse(response);
-    if (error)
-    {
-        throw *error;
-    }
-
-    return response;
-}
-
-void DexcomClient::createSession()
-{
-    constexpr int MAX_RETRIES = 3;
-    int retries = 0;
-
-    while (retries < MAX_RETRIES)
-    {
-        try
-        {
-            if (_account_id.empty())
-            {
-                if (_username.empty())
-                {
-                    throw ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
-                }
-                _account_id = getAccountId();
-            }
-
-            if (_account_id.empty() || _account_id == DexcomConst::DEFAULT_UUID)
-            {
-                throw ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
-            }
-
-            _session_id = getSessionId();
-
-            if (_session_id.empty() || _session_id == DexcomConst::DEFAULT_UUID)
-            {
-                throw ArgumentError(DexcomErrors::ArgumentError::SESSION_ID_INVALID);
-            }
-
-            // session creation was successful
-            return;
-        }
-        catch (const DexcomError &e)
-        {
-            retries++;
-            if (retries >= MAX_RETRIES)
-            {
-                throw; // rethrow last error if exhausted retries
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(retries));
-        }
-    }
 }
 
 std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string &response)
@@ -227,62 +285,4 @@ std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string
     }
 
     return readings;
-}
-
-std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, uint16_t max_count)
-{
-    std::vector<GlucoseReading> readings;
-
-    auto fetchAndParseReadings = [this, minutes, max_count, &readings]()
-    {
-        std::string response = getGlucoseReadingsRaw(minutes, max_count);
-        readings = parseGlucoseReadings(response);
-    };
-
-    try
-    {
-        fetchAndParseReadings();
-    }
-    catch (SessionError &)
-    {
-        createSession();
-        fetchAndParseReadings();
-    }
-
-    return readings;
-}
-
-std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_count)
-{
-    if (minutes == 0 || minutes > DexcomConst::MAX_MINUTES)
-    {
-        throw ArgumentError(DexcomErrors::ArgumentError::MINUTES_INVALID);
-    }
-    if (max_count == 0 || max_count > DexcomConst::MAX_MAX_COUNT)
-    {
-        throw ArgumentError(DexcomErrors::ArgumentError::MAX_COUNT_INVALID);
-    }
-
-    std::string params = "sessionId=" + _session_id + "&minutes=" + std::to_string(minutes) + "&maxCount=" + std::to_string(max_count);
-    std::string response = post(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT, params);
-
-    auto error = handleResponse(response);
-    if (error)
-    {
-        throw *error;
-    }
-
-    return response;
-}
-
-std::optional<GlucoseReading> DexcomClient::getLatestGlucoseReading()
-{
-    auto readings = getGlucoseReadings(DexcomConst::MAX_MINUTES, 1);
-    return readings.empty() ? std::nullopt : std::make_optional(readings[0]);
-}
-
-std::optional<GlucoseReading> DexcomClient::getCurrentGlucoseReading()
-{
-    auto readings = getGlucoseReadings(10, 1);
-    return readings.empty() ? std::nullopt : std::make_optional(readings[0]);
 }

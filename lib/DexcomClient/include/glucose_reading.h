@@ -7,9 +7,19 @@
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
 
+/**
+ * @file glucose_reading.h
+ * @brief Defines the GlucoseReading class representing a single glucose measurement.
+ */
+
 class GlucoseReading
 {
 public:
+    /**
+     * @brief Constructs a GlucoseReading from JSON data.
+     *
+     * @param jsonGlucoseReading JSON object containing glucose reading data
+     */
     explicit GlucoseReading(const JsonObjectConst &jsonGlucoseReading)
     {
         _value = static_cast<uint16_t>(jsonGlucoseReading["Value"].as<int>());

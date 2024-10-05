@@ -3,8 +3,15 @@
 
 #include <cstdint>
 
+/**
+ * @file dexcom_constants.h
+ * @brief Defines constants and enums used in the Dexcom API client.
+ */
+
 namespace DexcomConst
 {
+    // API endpoints, application IDs, etc...
+
     inline constexpr const char *DEXCOM_APPLICATION_ID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
     inline constexpr const char *DEXCOM_BASE_URL = "https://share2.dexcom.com/ShareWebServices/Services";
     inline constexpr const char *DEXCOM_BASE_URL_OUS = "https://shareous1.dexcom.com/ShareWebServices/Services";
@@ -13,6 +20,9 @@ namespace DexcomConst
     inline constexpr const char *DEXCOM_GLUCOSE_READINGS_ENDPOINT = "Publisher/ReadPublisherLatestGlucoseValues";
     inline constexpr const char *DEFAULT_UUID = "00000000-0000-0000-0000-000000000000";
 
+    /**
+     * @brief Represents the trend direction of glucose readings.
+     */
     enum TrendDirection
     {
         None = 0,

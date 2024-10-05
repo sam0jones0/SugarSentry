@@ -5,6 +5,14 @@
 #include <cstddef>
 #include <string>
 
+/**
+ * @file ISecureClient.h
+ * @brief Defines the ISecureClient interface for secure network communication.
+ *
+ * This interface should be implemented by classes that provide secure
+ * network communication capabilities (e.g., SSL/TLS).
+ */
+
 class ISecureClient
 {
 public:
