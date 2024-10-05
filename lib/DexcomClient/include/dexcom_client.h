@@ -52,7 +52,7 @@ public:
                                                    uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
 
     /**
-     * @brief Retrieves the latest glucose reading.
+     * @brief Retrieves the latest glucose reading, within the last 24 hours.
      *
      * @return std::optional<GlucoseReading> The latest reading, or nullopt if none available
      *
