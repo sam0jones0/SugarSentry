@@ -21,10 +21,10 @@ void setup()
 
   try
   {
-    auto reading = dexcomClient.getCurrentGlucoseReading();
+    auto reading = dexcomClient.getLatestGlucoseReading();
     if (reading)
     {
-      Serial.print("Current glucose: ");
+      Serial.print("Last glucose reading: ");
       Serial.print(reading->getValue());
       Serial.println(" mg/dL");
     }
