@@ -18,8 +18,8 @@ public:
                  const std::string &username = "",
                  bool ous = false);
 
-    std::vector<GlucoseReading> get_glucose_readings(uint16_t minutes = DexcomConst::MAX_MINUTES,
-                                                     uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
+    std::vector<GlucoseReading> getGlucoseReadings(uint16_t minutes = DexcomConst::MAX_MINUTES,
+                                                   uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
 
     std::optional<GlucoseReading> getLatestGlucoseReading();
     std::optional<GlucoseReading> getCurrentGlucoseReading();
@@ -44,7 +44,7 @@ private:
 
     void createSession();
 
-    std::string get_glucose_readingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
+    std::string getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
 };
 
 #endif // DEXCOM_CLIENT_H

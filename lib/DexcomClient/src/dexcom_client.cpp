@@ -229,13 +229,13 @@ std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string
     return readings;
 }
 
-std::vector<GlucoseReading> DexcomClient::get_glucose_readings(uint16_t minutes, uint16_t max_count)
+std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, uint16_t max_count)
 {
     std::vector<GlucoseReading> readings;
 
     auto fetchAndParseReadings = [this, minutes, max_count, &readings]()
     {
-        std::string response = get_glucose_readingsRaw(minutes, max_count);
+        std::string response = getGlucoseReadingsRaw(minutes, max_count);
         readings = parseGlucoseReadings(response);
     };
 
@@ -252,7 +252,7 @@ std::vector<GlucoseReading> DexcomClient::get_glucose_readings(uint16_t minutes,
     return readings;
 }
 
-std::string DexcomClient::get_glucose_readingsRaw(uint16_t minutes, uint16_t max_count)
+std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_count)
 {
     if (minutes == 0 || minutes > DexcomConst::MAX_MINUTES)
     {
@@ -277,12 +277,12 @@ std::string DexcomClient::get_glucose_readingsRaw(uint16_t minutes, uint16_t max
 
 std::optional<GlucoseReading> DexcomClient::getLatestGlucoseReading()
 {
-    auto readings = get_glucose_readings(DexcomConst::MAX_MINUTES, 1);
+    auto readings = getGlucoseReadings(DexcomConst::MAX_MINUTES, 1);
     return readings.empty() ? std::nullopt : std::make_optional(readings[0]);
 }
 
 std::optional<GlucoseReading> DexcomClient::getCurrentGlucoseReading()
 {
-    auto readings = get_glucose_readings(10, 1);
+    auto readings = getGlucoseReadings(10, 1);
     return readings.empty() ? std::nullopt : std::make_optional(readings[0]);
 }
