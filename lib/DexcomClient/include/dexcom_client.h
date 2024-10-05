@@ -69,9 +69,6 @@ public:
      */
     std::optional<GlucoseReading> getCurrentGlucoseReading();
 
-    // TODO: Make this private
-    std::vector<GlucoseReading> parseGlucoseReadings(const std::string &response);
-
 private:
     ISecureClient &_client;
     std::string _base_url;
@@ -92,6 +89,8 @@ private:
     std::optional<DexcomError> handleResponse(const std::string &response);
 
     std::string getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
+
+    std::vector<GlucoseReading> parseGlucoseReadings(const std::string &response);
 };
 
 #endif // DEXCOM_CLIENT_H
