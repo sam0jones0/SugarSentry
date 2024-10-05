@@ -6,7 +6,7 @@
 #include <string>
 
 /**
- * @file ISecureClient.h
+ * @file i_secure_client.h
  * @brief Defines the ISecureClient interface for secure network communication.
  *
  * This interface should be implemented by classes that provide secure

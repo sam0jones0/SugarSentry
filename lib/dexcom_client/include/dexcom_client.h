@@ -1,7 +1,7 @@
 #ifndef DEXCOM_CLIENT_H
 #define DEXCOM_CLIENT_H
 
-#include <ISecureClient.h>
+#include <i_secure_client.h>
 #include <vector>
 #include <optional>
 #include <string>
@@ -33,9 +33,9 @@ public:
      * @throws SessionError if session creation fails
      */
     DexcomClient(ISecureClient &client,
-                 const std::string &password,
-                 const std::string &account_id = "",
                  const std::string &username = "",
+                 const std::string &account_id = "",
+                 const std::string &password = "",
                  bool ous = false);
 
     /**

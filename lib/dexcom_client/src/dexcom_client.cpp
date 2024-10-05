@@ -1,15 +1,15 @@
 #include "dexcom_client.h"
 #include "dexcom_utils.h"
 #include <ArduinoJson.h>
-#include <ISecureClient.h>
+#include <i_secure_client.h>
 #include <sstream>
 #include <chrono>
 #include <thread>
 
 DexcomClient::DexcomClient(ISecureClient &client,
-                           const std::string &password,
-                           const std::string &account_id,
                            const std::string &username,
+                           const std::string &account_id,
+                           const std::string &password,
                            bool ous)
     : _client(client),
       _base_url(ous ? DexcomConst::DEXCOM_BASE_URL_OUS : DexcomConst::DEXCOM_BASE_URL),

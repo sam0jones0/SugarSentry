@@ -1,7 +1,7 @@
 #ifndef MOCK_SECURE_CLIENT_H
 #define MOCK_SECURE_CLIENT_H
 
-#include "ISecureClient.h"
+#include "i_secure_client.h"
 #include <string>
 #include <vector>
 

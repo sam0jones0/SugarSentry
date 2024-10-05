@@ -2,7 +2,7 @@
 
 #include <unity.h>
 #include "dexcom_client.h"
-#include "MockSecureClient.h"
+#include "mock_secure_client.h"
 #include <memory>
 #include <stdexcept>
 
@@ -13,7 +13,7 @@ std::unique_ptr<DexcomClient> dexcomClient;
 void setUp(void)
 {
     mockClient = std::make_unique<MockSecureClient>();
-    dexcomClient = std::make_unique<DexcomClient>(*mockClient, "password", "account_id", "username", false);
+    dexcomClient = std::make_unique<DexcomClient>(*mockClient, "username", "account_id", "password", false);
 }
 
 void tearDown(void)
@@ -35,7 +35,7 @@ void test_dexcom_client_constructor_success()
     bool exceptionThrown = false;
     try
     {
-        DexcomClient client(*mockClient, "password", "account_id", "username", false);
+        DexcomClient client(*mockClient, "username", "account_id", "password", false);
     }
     catch (...)
     {
