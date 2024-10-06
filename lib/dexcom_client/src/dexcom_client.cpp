@@ -131,7 +131,7 @@ std::string DexcomClient::getSessionId()
 
 std::string DexcomClient::post(const std::string &endpoint, const std::string &params, const std::string &json)
 {
-    std::string url = _base_url + "/" + endpoint;
+    std::string url = "https://" + std::string(_base_url) + "/ShareWebServices/Services/" + endpoint;
     if (!params.empty())
     {
         url += "?" + params;
