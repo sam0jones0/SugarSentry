@@ -5,14 +5,6 @@
 #include <cstddef>
 #include <string>
 
-/**
- * @file i_secure_client.h
- * @brief Defines the ISecureClient interface for secure network communication.
- *
- * This interface should be implemented by classes that provide secure
- * network communication capabilities (e.g., SSL/TLS).
- */
-
 class ISecureClient
 {
 public:
@@ -26,6 +18,11 @@ public:
     virtual void stop() = 0;
     virtual bool connected() = 0;
     virtual void setTimeout(uint32_t timeout) = 0;
+    
+    // New methods
+    virtual void println(const std::string& data) = 0;
+    virtual void println() = 0;
+    virtual std::string readStringUntil(char terminator) = 0;
 };
 
 #endif // ISECURE_CLIENT_H

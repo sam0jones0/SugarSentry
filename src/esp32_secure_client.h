@@ -20,11 +20,16 @@ public:
     bool connected() override;
     void setTimeout(uint32_t timeout) override;
 
-    void setCACert(const char* rootCA);
+    // New methods
+    void println(const std::string &data) override;
+    void println() override;
+    std::string readStringUntil(char terminator) override;
+
+    void setCACert(const char *rootCA);
 
 private:
     WiFiClientSecure _client;
-    const char* _rootCA;
+    const char *_rootCA;
 };
 
 #endif // ESP32_SECURE_CLIENT_H

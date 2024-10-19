@@ -1,5 +1,6 @@
 #include "esp32_secure_client.h"
 #include <Arduino.h>
+#include <dexcom_constants.h>
 
 ESP32SecureClient::ESP32SecureClient()
 {
@@ -10,14 +11,38 @@ bool ESP32SecureClient::connect(const char *host, uint16_t port)
     Serial.printf("Attempting to connect to %s:%d\n", host, port);
     if (_rootCA)
     {
+        Serial.println("Using provided root CA");
         _client.setCACert(_rootCA);
     }
     else
     {
-        _client.setInsecure(); // Fallback to insecure if no cert provided
+        _client.setInsecure();
         Serial.println("Falling back to insecure");
     }
-    return _client.connect(host, port);
+
+    for (int i = 0; i < DexcomConst::MAX_CONNECT_RETRIES; i++)
+    {
+        Serial.printf("Connection attempt %d\n", i + 1);
+        if (_client.connect(host, port))
+        {
+            Serial.println("TCP connection established");
+            if (_client.connected())
+            {
+                Serial.println("SSL/TLS handshake completed successfully");
+                return true;
+            }
+            else
+            {
+                Serial.println("SSL/TLS handshake failed");
+            }
+        }
+        char error_buffer[100];
+        _client.lastError(error_buffer, sizeof(error_buffer));
+        Serial.printf("Connection attempt %d failed. Error: %s\n", i + 1, error_buffer);
+        delay(1000 * (i + 1)); // Increasing delay between retries
+    }
+    Serial.println("All connection attempts failed");
+    return false;
 }
 
 void ESP32SecureClient::setCACert(const char *rootCA)
@@ -58,6 +83,22 @@ void ESP32SecureClient::stop()
 bool ESP32SecureClient::connected()
 {
     return _client.connected();
+}
+
+void ESP32SecureClient::println(const std::string& data)
+{
+    _client.println(data.c_str());
+}
+
+void ESP32SecureClient::println()
+{
+    _client.println();
+}
+
+std::string ESP32SecureClient::readStringUntil(char terminator)
+{
+    String result = _client.readStringUntil(terminator);
+    return std::string(result.c_str());
 }
 
 void ESP32SecureClient::setTimeout(uint32_t timeout)

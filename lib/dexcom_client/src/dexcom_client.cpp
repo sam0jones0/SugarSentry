@@ -5,6 +5,7 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <string>
 
 DexcomClient::DexcomClient(ISecureClient &client,
                            const std::string &username,
@@ -131,51 +132,59 @@ std::string DexcomClient::getSessionId()
 
 std::string DexcomClient::post(const std::string &endpoint, const std::string &params, const std::string &json)
 {
-    std::string url = "https://" + std::string(_base_url) + "/ShareWebServices/Services/" + endpoint;
+    std::string url = "/ShareWebServices/Services/" + endpoint;
     if (!params.empty())
     {
         url += "?" + params;
     }
 
-    constexpr uint32_t TIMEOUT_MS = 10000;
-    _client.setTimeout(TIMEOUT_MS);
-
+    Serial.println("Attempting to connect...");
     if (!_client.connect(_base_url.c_str(), 443))
     {
+        Serial.println("Connection failed");
         return "Connection failed";
     }
+    Serial.println("Connected successfully");
 
-    std::ostringstream request;
-    request << "POST " << url << " HTTP/1.1\r\n";
-    request << "Host: " << _base_url << "\r\n";
-    request << "Accept-Encoding: application/json\r\n";
-    request << "Content-Type: application/json\r\n";
-    request << "Connection: close\r\n";
+    Serial.println("Sending request...");
+    _client.println("POST " + url + " HTTP/1.1");
+    _client.println("Host: " + _base_url);
+    _client.println("Accept-Encoding: application/json");
+    _client.println("Content-Type: application/json");
+    _client.println("Connection: close");
     if (!json.empty())
     {
-        request << "Content-Length: " << json.length() << "\r\n\r\n";
-        request << json << "\r\n";
+        _client.println("Content-Length: " + std::to_string(json.length()));
+        _client.println();
+        _client.println(json);
     }
     else
     {
-        request << "\r\n";
+        _client.println();
     }
 
-    std::string requestStr = request.str();
-    _client.write(reinterpret_cast<const uint8_t *>(requestStr.c_str()), requestStr.length());
-
-    constexpr size_t BUFFER_SIZE = 1024;
-    char buffer[BUFFER_SIZE];
+    Serial.println("Reading response...");
     std::string response;
-    size_t bytesRead;
-
-    while (_client.connected() && (bytesRead = _client.read(reinterpret_cast<uint8_t *>(buffer), BUFFER_SIZE - 1)) > 0)
+    while (_client.connected())
     {
-        buffer[bytesRead] = '\0';
-        response.append(buffer);
+        std::string line = _client.readStringUntil('\n');
+        if (line == "\r")
+        {
+            Serial.println("Headers received");
+            break;
+        }
     }
 
+    while (_client.available())
+    {
+        char c = _client.read();
+        response += c;
+    }
+
+    Serial.println("Response received");
     _client.stop();
+    Serial.println("Raw response:");
+    Serial.println(response.c_str());
     return response;
 }
 
@@ -262,27 +271,48 @@ std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string
     std::vector<GlucoseReading> readings;
     readings.reserve(DexcomConst::MAX_MAX_COUNT);
 
+    Serial.println("Parsing glucose readings. Raw response:");
+    Serial.println(response.c_str());
+
     StaticJsonDocument<256> doc;
     size_t pos = 0;
     while (pos < response.length())
     {
         size_t start = response.find('{', pos);
         if (start == std::string::npos)
+        {
+            Serial.println("No more JSON objects found in response");
             break;
+        }
 
         size_t end = response.find('}', start);
         if (end == std::string::npos)
+        {
+            Serial.println("Incomplete JSON object found in response");
             break;
+        }
 
         std::string jsonObject = response.substr(start, end - start + 1);
+        Serial.print("Parsing JSON object: ");
+        Serial.println(jsonObject.c_str());
+
         DeserializationError err = deserializeJson(doc, jsonObject);
         if (err == DeserializationError::Ok)
         {
             readings.emplace_back(doc.as<JsonObjectConst>());
+            Serial.println("Successfully parsed glucose reading");
+        }
+        else
+        {
+            Serial.print("Failed to parse JSON object: ");
+            Serial.println(err.c_str());
         }
         doc.clear();
         pos = end + 1;
     }
+
+    Serial.print("Total glucose readings parsed: ");
+    Serial.println(readings.size());
 
     return readings;
 }
