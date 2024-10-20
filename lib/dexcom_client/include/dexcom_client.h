@@ -38,6 +38,8 @@ public:
                  const std::string &password = "",
                  bool ous = false);
 
+    ~DexcomClient();
+
     /**
      * @brief Retrieves glucose readings from the Dexcom API.
      *
@@ -76,6 +78,7 @@ private:
     std::string _account_id;
     std::string _username;
     std::string _session_id;
+    bool _connected;
 
     void createSession();
 
@@ -91,6 +94,12 @@ private:
     std::string getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
 
     std::vector<GlucoseReading> parseGlucoseReadings(const std::string &response);
+
+    bool ensureConnected();
+
+    void disconnect();
+
+    int parseHttpStatusCode(const std::string &statusLine);
 };
 
 #endif // DEXCOM_CLIENT_H

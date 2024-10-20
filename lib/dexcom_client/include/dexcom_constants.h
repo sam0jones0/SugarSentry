@@ -81,6 +81,7 @@ namespace DexcomConst
     constexpr float MMOL_L_CONVERSION_FACTOR = 0.0555f;
 
     constexpr uint8_t MAX_CONNECT_RETRIES = 3;
+    constexpr uint8_t MAX_POST_RETRIES = 3;
     extern const char *rootCA;
 }
 

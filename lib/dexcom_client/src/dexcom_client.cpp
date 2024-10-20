@@ -17,9 +17,15 @@ DexcomClient::DexcomClient(ISecureClient &client,
       _password(password),
       _account_id(account_id),
       _username(username),
-      _session_id("")
+      _session_id(""),
+      _connected(false)
 {
     createSession();
+}
+
+DexcomClient::~DexcomClient()
+{
+    disconnect();
 }
 
 std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, uint16_t max_count)
@@ -59,10 +65,10 @@ std::optional<GlucoseReading> DexcomClient::getCurrentGlucoseReading()
 
 void DexcomClient::createSession()
 {
-    constexpr int MAX_RETRIES = 3;
     int retries = 0;
 
-    while (retries < MAX_RETRIES)
+    while (retries < DexcomConst::MAX_CONNECT_RETRIES)
+
     {
         try
         {
@@ -87,13 +93,15 @@ void DexcomClient::createSession()
                 throw ArgumentError(DexcomErrors::ArgumentError::SESSION_ID_INVALID);
             }
 
-            // session creation was successful
+            Serial.println("Session created successfully");
+            Serial.print("Session ID: ");
+            Serial.println(_session_id.c_str());
             return;
         }
         catch (const DexcomError &e)
         {
             retries++;
-            if (retries >= MAX_RETRIES)
+            if (retries >= DexcomConst::MAX_CONNECT_RETRIES)
             {
                 throw; // rethrow last error if exhausted retries
             }
@@ -107,11 +115,14 @@ std::string DexcomClient::getAccountId()
     std::string json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
 
-    auto error = handleResponse(response);
-    if (error)
+    if (response.substr(0, 11) == "HTTP Error:" || response == "Max retries reached")
     {
-        throw *error;
+        throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
     }
+
+    response.erase(std::remove_if(response.begin(), response.end(), [](char c)
+                                  { return std::isspace(c) || c == '\"'; }),
+                   response.end());
 
     return response;
 }
@@ -121,71 +132,131 @@ std::string DexcomClient::getSessionId()
     std::string json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
 
-    auto error = handleResponse(response);
-    if (error)
+    if (response.substr(0, 11) == "HTTP Error:" || response == "Max retries reached")
     {
-        throw *error;
+        throw SessionError(DexcomErrors::SessionError::INVALID);
     }
+
+    response.erase(std::remove_if(response.begin(), response.end(), [](char c)
+                                  { return std::isspace(c) || c == '\"'; }),
+                   response.end());
 
     return response;
 }
 
 std::string DexcomClient::post(const std::string &endpoint, const std::string &params, const std::string &json)
 {
-    std::string url = "/ShareWebServices/Services/" + endpoint;
-    if (!params.empty())
+    for (int attempt = 0; attempt < DexcomConst::MAX_POST_RETRIES; ++attempt)
     {
-        url += "?" + params;
-    }
-
-    Serial.println("Attempting to connect...");
-    if (!_client.connect(_base_url.c_str(), 443))
-    {
-        Serial.println("Connection failed");
-        return "Connection failed";
-    }
-    Serial.println("Connected successfully");
-
-    Serial.println("Sending request...");
-    _client.println("POST " + url + " HTTP/1.1");
-    _client.println("Host: " + _base_url);
-    _client.println("Accept-Encoding: application/json");
-    _client.println("Content-Type: application/json");
-    _client.println("Connection: close");
-    if (!json.empty())
-    {
-        _client.println("Content-Length: " + std::to_string(json.length()));
-        _client.println();
-        _client.println(json);
-    }
-    else
-    {
-        _client.println();
-    }
-
-    Serial.println("Reading response...");
-    std::string response;
-    while (_client.connected())
-    {
-        std::string line = _client.readStringUntil('\n');
-        if (line == "\r")
+        if (!ensureConnected())
         {
-            Serial.println("Headers received");
-            break;
+            Serial.println("Connection failed");
+            continue;
+        }
+
+        std::string url = "/ShareWebServices/Services/" + endpoint;
+        if (!params.empty())
+        {
+            url += "?" + params;
+        }
+
+        Serial.printf("Attempt %d: Sending request to %s\n", attempt + 1, url.c_str());
+        Serial.printf("Headers:\nHost: %s\nContent-Type: application/json\n", _base_url.c_str());
+        if (!json.empty())
+        {
+            Serial.printf("Body: %s\n", json.c_str());
+        }
+
+        _client.println("POST " + url + " HTTP/1.1");
+        _client.println("Host: " + _base_url);
+        _client.println("Content-Type: application/json");
+        _client.println("Connection: keep-alive");
+        if (!json.empty())
+        {
+            _client.println("Content-Length: " + std::to_string(json.length()));
+            _client.println();
+            _client.println(json);
+        }
+        else
+        {
+            _client.println();
+        }
+
+        std::string statusLine = _client.readStringUntil('\n');
+        int statusCode = parseHttpStatusCode(statusLine);
+
+        Serial.printf("Received status code: %d\n", statusCode);
+
+        if (statusCode == 200)
+        {
+            std::string response;
+            while (_client.connected())
+            {
+                std::string line = _client.readStringUntil('\n');
+                if (line == "\r")
+                {
+                    break;
+                }
+            }
+            while (_client.available())
+            {
+                char c = _client.read();
+                response += c;
+            }
+            Serial.printf("Response: %s\n", response.c_str());
+            return response;
+        }
+        else if (statusCode == 500)
+        {
+            Serial.println("Received 500 error, retrying...");
+            disconnect();
+            delay(1000 * (attempt + 1)); // Exponential backoff
+        }
+        else
+        {
+            disconnect();
+            return "HTTP Error: " + std::to_string(statusCode);
         }
     }
+    return "Max retries reached";
+}
 
-    while (_client.available())
+bool DexcomClient::ensureConnected()
+{
+    if (!_connected)
     {
-        char c = _client.read();
-        response += c;
+        _connected = _client.connect(_base_url.c_str(), 443);
+        if (_connected)
+        {
+            Serial.println("Connected to server");
+        }
+        else
+        {
+            Serial.println("Failed to connect to server");
+        }
     }
+    return _connected;
+}
 
-    Serial.println("Response received");
-    _client.stop();
-    Serial.println("Raw response:");
-    Serial.println(response.c_str());
-    return response;
+void DexcomClient::disconnect()
+{
+    if (_connected)
+    {
+        _client.stop();
+        _connected = false;
+        Serial.println("Disconnected from server");
+    }
+}
+
+int DexcomClient::parseHttpStatusCode(const std::string &statusLine)
+{
+    size_t pos = statusLine.find(' ');
+    if (pos != std::string::npos)
+    {
+        std::string codeStr = statusLine.substr(pos + 1, 3);
+        return std::stoi(codeStr);
+    }
+    return 0;
 }
 
 std::optional<DexcomError> DexcomClient::handleResponse(const std::string &response)
@@ -257,10 +328,9 @@ std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_c
     std::string params = "sessionId=" + _session_id + "&minutes=" + std::to_string(minutes) + "&maxCount=" + std::to_string(max_count);
     std::string response = post(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT, params);
 
-    auto error = handleResponse(response);
-    if (error)
+    if (response.substr(0, 11) == "HTTP Error:")
     {
-        throw *error;
+        throw SessionError(DexcomErrors::SessionError::INVALID);
     }
 
     return response;
