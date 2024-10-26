@@ -77,7 +77,6 @@ void DexcomClient::createSession()
             {
                 if (_username.empty())
                 {
-                    DEBUG_ERROR("Username is invalid");
                     throw ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
                 }
                 _account_id = getAccountId();
@@ -85,7 +84,6 @@ void DexcomClient::createSession()
 
             if (_account_id.empty() || _account_id == DexcomConst::DEFAULT_UUID)
             {
-                DEBUG_ERROR("Account ID is invalid");
                 throw ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
             }
 
@@ -93,12 +91,11 @@ void DexcomClient::createSession()
 
             if (_session_id.empty() || _session_id == DexcomConst::DEFAULT_UUID)
             {
-                DEBUG_ERROR("Session ID is invalid");
                 throw ArgumentError(DexcomErrors::ArgumentError::SESSION_ID_INVALID);
             }
 
-            DEBUG_INFO("Session created successfully");
-            DEBUG_INFO_F("Session ID: %s", _session_id.c_str());
+            DEBUG_PRINT("Session created successfully");
+            DEBUG_PRINTF("Session ID: %s\n", _session_id.c_str());
             return;
         }
         catch (const DexcomError &e)
@@ -106,10 +103,8 @@ void DexcomClient::createSession()
             retries++;
             if (retries >= DexcomConst::MAX_CONNECT_RETRIES)
             {
-                DEBUG_ERROR_F("Failed to create session after %d attempts", retries);
                 throw;
             }
-            DEBUG_WARN_F("Session creation retry attempt %d/%d", retries, DexcomConst::MAX_CONNECT_RETRIES);
             PLATFORM_DELAY(1000 * retries);
         }
     }
@@ -155,7 +150,7 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
     {
         if (!ensureConnected())
         {
-            DEBUG_ERROR("Connection failed");
+            DEBUG_PRINT("Connection failed");
             continue;
         }
 
@@ -165,11 +160,11 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
             url += "?" + params;
         }
 
-        DEBUG_INFO_F("Attempt %d: Sending request to %s", attempt + 1, url.c_str());
-        DEBUG_VERBOSE_F("Headers:\nHost: %s\nContent-Type: application/json", _base_url.c_str());
+        DEBUG_PRINTF("Attempt %d: Sending request to %s\n", attempt + 1, url.c_str());
+        DEBUG_PRINTF("Headers:\nHost: %s\nContent-Type: application/json\n", _base_url.c_str());
         if (!json.empty())
         {
-            DEBUG_VERBOSE_F("Body: %s", json.c_str());
+            DEBUG_PRINTF("Body: %s\n", json.c_str());
         }
 
         _client.println("POST " + url + " HTTP/1.1");
@@ -190,7 +185,7 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
         std::string statusLine = _client.readStringUntil('\n');
         int statusCode = parseHttpStatusCode(statusLine);
 
-        DEBUG_INFO_F("Received status code: %d", statusCode);
+        DEBUG_PRINTF("Received status code: %d\n", statusCode);
 
         if (statusCode == 200)
         {
@@ -208,23 +203,21 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
                 char c = _client.read();
                 response += c;
             }
-            DEBUG_VERBOSE_F("Response: %s", response.c_str());
+            DEBUG_PRINTF("Response: %s\n", response.c_str());
             return response;
         }
         else if (statusCode == 500)
         {
-            DEBUG_WARN("Received 500 error, retrying...");
+            DEBUG_PRINT("Received 500 error, retrying...");
             disconnect();
             PLATFORM_DELAY(1000 * (attempt + 1)); // Exponential backoff
         }
         else
         {
-            DEBUG_ERROR_F("HTTP Error: %d", statusCode);
             disconnect();
             return "HTTP Error: " + std::to_string(statusCode);
         }
     }
-    DEBUG_ERROR("Max retries reached");
     return "Max retries reached";
 }
 
@@ -235,11 +228,11 @@ bool DexcomClient::ensureConnected()
         _connected = _client.connect(_base_url.c_str(), 443);
         if (_connected)
         {
-            DEBUG_INFO("Connected to server");
+            DEBUG_PRINT("Connected to server");
         }
         else
         {
-            DEBUG_ERROR("Failed to connect to server");
+            DEBUG_PRINT("Failed to connect to server");
         }
     }
     return _connected;
@@ -251,7 +244,7 @@ void DexcomClient::disconnect()
     {
         _client.stop();
         _connected = false;
-        DEBUG_INFO("Disconnected from server");
+        DEBUG_PRINT("Disconnected from server");
     }
 }
 
@@ -348,8 +341,8 @@ std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string
     std::vector<GlucoseReading> readings;
     readings.reserve(DexcomConst::MAX_MAX_COUNT);
 
-    DEBUG_INFO("Parsing glucose readings");
-    DEBUG_VERBOSE_F("Raw response: %s", response.c_str());
+    DEBUG_PRINT("Parsing glucose readings. Raw response:");
+    DEBUG_PRINT(response.c_str());
 
     StaticJsonDocument<256> doc;
     size_t pos = 0;
@@ -358,35 +351,38 @@ std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string
         size_t start = response.find('{', pos);
         if (start == std::string::npos)
         {
-            DEBUG_DBG("No more JSON objects found in response");
+            DEBUG_PRINT("No more JSON objects found in response");
             break;
         }
 
         size_t end = response.find('}', start);
         if (end == std::string::npos)
         {
-            DEBUG_WARN("Incomplete JSON object found in response");
+            DEBUG_PRINT("Incomplete JSON object found in response");
             break;
         }
 
         std::string jsonObject = response.substr(start, end - start + 1);
-        DEBUG_VERBOSE_F("Parsing JSON object: %s", jsonObject.c_str());
+        DEBUG_PRINT("Parsing JSON object: ");
+        DEBUG_PRINT(jsonObject.c_str());
 
         DeserializationError err = deserializeJson(doc, jsonObject);
         if (err == DeserializationError::Ok)
         {
             readings.emplace_back(doc.as<JsonObjectConst>());
-            DEBUG_DBG("Successfully parsed glucose reading");
+            DEBUG_PRINT("Successfully parsed glucose reading");
         }
         else
         {
-            DEBUG_ERROR_F("Failed to parse JSON object: %s", err.c_str());
+            DEBUG_PRINT("Failed to parse JSON object: ");
+            DEBUG_PRINT(err.c_str());
         }
         doc.clear();
         pos = end + 1;
     }
 
-    DEBUG_INFO_F("Total glucose readings parsed: %d", readings.size());
+    DEBUG_PRINT("Total glucose readings parsed: ");
+    DEBUG_PRINTF("%d\n", readings.size());
 
     return readings;
 }
