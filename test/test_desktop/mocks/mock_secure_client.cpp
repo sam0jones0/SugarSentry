@@ -63,6 +63,32 @@ void MockSecureClient::setTimeout(uint32_t timeout)
     this->timeout = timeout;
 }
 
+void MockSecureClient::println(const std::string &data)
+{
+    write(reinterpret_cast<const uint8_t *>(data.c_str()), data.length());
+    write(reinterpret_cast<const uint8_t *>("\r\n"), 2);
+}
+
+void MockSecureClient::println()
+{
+    write(reinterpret_cast<const uint8_t *>("\r\n"), 2);
+}
+
+std::string MockSecureClient::readStringUntil(char terminator)
+{
+    std::string result;
+    while (readIndex < readData.length())
+    {
+        char c = readData[readIndex++];
+        result += c;
+        if (c == terminator)
+        {
+            break;
+        }
+    }
+    return result;
+}
+
 // Test control functions
 void MockSecureClient::setConnected(bool connected)
 {

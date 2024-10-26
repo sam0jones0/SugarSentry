@@ -17,6 +17,9 @@ public:
     void stop() override;
     bool connected() override;
     void setTimeout(uint32_t timeout) override;
+    void println(const std::string& data) override;
+    void println() override;
+    std::string readStringUntil(char terminator) override;
 
     // Test control functions
     void setConnected(bool isConnected);
