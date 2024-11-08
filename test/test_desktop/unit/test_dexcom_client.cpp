@@ -1,6 +1,6 @@
 #include <unity.h>
 #include "dexcom_client.h"
-#include "mock_secure_client.h"
+#include "../mocks/mock_secure_client.h"
 #include <memory>
 #include <stdexcept>
 
@@ -12,13 +12,10 @@ void setUp(void)
 {
     mockClient = std::make_unique<MockSecureClient>();
     mockClient->setConnected(true);
-    // Set up a successful authentication response
-    mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "\"test-session-id\"");
-    dexcomClient = std::make_unique<DexcomClient>(*mockClient, "username", "account_id", "password", false);
+    // Set up a successful authentication response for getSessionId
+    mockClient->setNextReadData("\"00000000-0000-0000-0000-000000000001\"");
+    // Create client with account_id already provided to skip getAccountId call
+    dexcomClient = std::make_unique<DexcomClient>(*mockClient, "", "00000000-0000-0000-0000-000000000002", "password", false);
 }
 
 void tearDown(void)
@@ -35,16 +32,15 @@ void test_dexcom_client_constructor()
 void test_dexcom_client_constructor_success()
 {
     mockClient->setConnected(true);
-    mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "\"test-session-id\"");
+    // Set up response for getAccountId
+    mockClient->setNextReadData("\"00000000-0000-0000-0000-000000000002\"");
+    // Set up response for getSessionId
+    mockClient->setNextReadData("\"00000000-0000-0000-0000-000000000001\"");
 
     bool exceptionThrown = false;
     try
     {
-        DexcomClient client(*mockClient, "username", "account_id", "password", false);
+        DexcomClient client(*mockClient, "username", "", "password", false);
     }
     catch (...)
     {
@@ -56,16 +52,12 @@ void test_dexcom_client_constructor_success()
 void test_dexcom_client_constructor_auth_failure()
 {
     mockClient->setConnected(true);
-    mockClient->setNextReadData(
-        "HTTP/1.1 401 Unauthorized\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "{\"Code\":\"AccountError\",\"Message\":\"Authentication failed\"}");
+    mockClient->setNextReadData("{\"Code\":\"AccountError\",\"Message\":\"Authentication failed\"}");
 
     bool exceptionThrown = false;
     try
     {
-        DexcomClient client(*mockClient, "username", "account_id", "wrong_password", false);
+        DexcomClient client(*mockClient, "", "account_id", "wrong_password", false);
     }
     catch (const AccountError &)
     {
@@ -78,9 +70,6 @@ void test_dexcom_client_get_glucose_readings_success()
 {
     mockClient->setConnected(true);
     mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
         "[{\"WT\":\"Date(1625874245000)\",\"ST\":\"Date(1625874245000)\",\"DT\":\"Date(1625874245000+0100)\",\"Value\":120,\"Trend\":\"Flat\"},"
         "{\"WT\":\"Date(1625873945000)\",\"ST\":\"Date(1625873945000)\",\"DT\":\"Date(1625873945000+0100)\",\"Value\":118,\"Trend\":\"FortyFiveUp\"}]");
 
@@ -95,11 +84,7 @@ void test_dexcom_client_get_glucose_readings_success()
 void test_dexcom_client_get_glucose_readings_empty()
 {
     mockClient->setConnected(true);
-    mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "[]");
+    mockClient->setNextReadData("[]");
 
     auto readings = dexcomClient->getGlucoseReadings();
     TEST_ASSERT_EQUAL(0, readings.size());
@@ -158,9 +143,6 @@ void test_dexcom_client_get_latest_glucose_reading_success()
 {
     mockClient->setConnected(true);
     mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
         "[{\"WT\":\"Date(1625874245000)\",\"ST\":\"Date(1625874245000)\",\"DT\":\"Date(1625874245000+0100)\",\"Value\":120,\"Trend\":\"Flat\"}]");
 
     auto reading = dexcomClient->getLatestGlucoseReading();
@@ -172,11 +154,7 @@ void test_dexcom_client_get_latest_glucose_reading_success()
 void test_dexcom_client_get_latest_glucose_reading_empty()
 {
     mockClient->setConnected(true);
-    mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "[]");
+    mockClient->setNextReadData("[]");
 
     auto reading = dexcomClient->getLatestGlucoseReading();
     TEST_ASSERT_FALSE(reading.has_value());
@@ -186,9 +164,6 @@ void test_dexcom_client_get_current_glucose_reading_success()
 {
     mockClient->setConnected(true);
     mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
         "[{\"WT\":\"Date(1625874245000)\",\"ST\":\"Date(1625874245000)\",\"DT\":\"Date(1625874245000+0100)\",\"Value\":120,\"Trend\":\"Flat\"}]");
 
     auto reading = dexcomClient->getCurrentGlucoseReading();
@@ -200,11 +175,7 @@ void test_dexcom_client_get_current_glucose_reading_success()
 void test_dexcom_client_get_current_glucose_reading_empty()
 {
     mockClient->setConnected(true);
-    mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "[]");
+    mockClient->setNextReadData("[]");
 
     auto reading = dexcomClient->getCurrentGlucoseReading();
     TEST_ASSERT_FALSE(reading.has_value());
@@ -214,22 +185,16 @@ void test_dexcom_client_get_glucose_readings_max_size()
 {
     mockClient->setConnected(true);
 
-    std::string largeResponse = "HTTP/1.1 200 OK\r\n"
-                                "Content-Type: application/json\r\n"
-                                "\r\n"
-                                "[";
+    std::string largeResponse = "[";
     for (int i = 0; i < DexcomConst::MAX_MAX_COUNT; ++i)
     {
         if (i > 0)
             largeResponse += ",";
         largeResponse += "{\"WT\":\"Date(" + std::to_string(1625874245000 + i * 300000) + ")\","
-                                                                                          "\"ST\":\"Date(" +
-                         std::to_string(1625874245000 + i * 300000) + ")\","
-                                                                      "\"DT\":\"Date(" +
-                         std::to_string(1625874245000 + i * 300000) + "+0100)\","
-                                                                      "\"Value\":" +
-                         std::to_string(100 + i % 100) + ","
-                                                         "\"Trend\":\"Flat\"}";
+                        "\"ST\":\"Date(" + std::to_string(1625874245000 + i * 300000) + ")\","
+                        "\"DT\":\"Date(" + std::to_string(1625874245000 + i * 300000) + "+0100)\","
+                        "\"Value\":" + std::to_string(100 + i % 100) + ","
+                        "\"Trend\":\"Flat\"}";
     }
     largeResponse += "]";
 
@@ -247,11 +212,7 @@ void test_dexcom_client_get_glucose_readings_max_size()
 void test_dexcom_client_get_glucose_readings_error_response()
 {
     mockClient->setConnected(true);
-    mockClient->setNextReadData(
-        "HTTP/1.1 500 Internal Server Error\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "{\"Code\":\"SessionNotValid\",\"Message\":\"Session ID is invalid\"}");
+    mockClient->setNextReadData("{\"Code\":\"SessionNotValid\",\"Message\":\"Session ID is invalid\"}");
 
     bool exceptionThrown = false;
     try
@@ -284,11 +245,7 @@ void test_dexcom_client_connection_failure()
 void test_dexcom_client_get_glucose_readings_invalid_json()
 {
     mockClient->setConnected(true);
-    mockClient->setNextReadData(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "\r\n"
-        "This is not valid JSON");
+    mockClient->setNextReadData("This is not valid JSON");
 
     auto readings = dexcomClient->getGlucoseReadings();
     TEST_ASSERT_EQUAL(0, readings.size());

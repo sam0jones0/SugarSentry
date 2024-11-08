@@ -25,10 +25,12 @@ public:
     void setConnected(bool isConnected);
     void setNextReadData(const std::string &data);
     std::string getLastWrittenData() const;
+    std::string getResponseBody() const { return responseBody; }
 
 private:
     bool isConnected = false;
     std::string readData;
+    std::string responseBody;
     size_t readIndex = 0;
     uint32_t timeout = 0;
     std::vector<uint8_t> writtenData;

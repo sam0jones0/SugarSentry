@@ -15,6 +15,8 @@
 class GlucoseReading
 {
 public:
+    static constexpr uint16_t MAX_GLUCOSE_VALUE = 19072;  // Maximum valid glucose value
+
     /**
      * @brief Constructs a GlucoseReading from JSON data.
      *
@@ -22,7 +24,9 @@ public:
      */
     explicit GlucoseReading(const JsonObjectConst &jsonGlucoseReading)
     {
-        _value = static_cast<uint16_t>(jsonGlucoseReading["Value"].as<int>());
+        int rawValue = jsonGlucoseReading["Value"].as<int>();
+        _value = static_cast<uint16_t>(rawValue > MAX_GLUCOSE_VALUE ? MAX_GLUCOSE_VALUE : rawValue);
+        
         _trend = DexcomUtils::stringToTrendDirection(jsonGlucoseReading["Trend"].as<const char *>());
 
         const char *wtStr = jsonGlucoseReading["WT"].as<const char *>();

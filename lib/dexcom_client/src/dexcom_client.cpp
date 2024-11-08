@@ -112,6 +112,7 @@ void DexcomClient::createSession()
 
 std::string DexcomClient::getAccountId()
 {
+    // Manually construct JSON to ensure proper formatting
     std::string json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
 
@@ -129,6 +130,7 @@ std::string DexcomClient::getAccountId()
 
 std::string DexcomClient::getSessionId()
 {
+    // Manually construct JSON to ensure proper formatting
     std::string json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
 
@@ -182,28 +184,34 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
             _client.println();
         }
 
+        // Read status line
         std::string statusLine = _client.readStringUntil('\n');
+        DEBUG_PRINTF("Status line: %s\n", statusLine.c_str());
         int statusCode = parseHttpStatusCode(statusLine);
+        DEBUG_PRINTF("Parsed status code: %d\n", statusCode);
 
-        DEBUG_PRINTF("Received status code: %d\n", statusCode);
+        // Skip headers until empty line
+        while (_client.connected() && _client.available())
+        {
+            std::string line = _client.readStringUntil('\n');
+            DEBUG_PRINTF("Header line: %s\n", line.c_str());
+            if (line == "\r" || line.empty())
+            {
+                break;
+            }
+        }
+
+        // Read response body
+        std::string response;
+        while (_client.connected() && _client.available())
+        {
+            char c = _client.read();
+            response += c;
+        }
+        DEBUG_PRINTF("Response body: %s\n", response.c_str());
 
         if (statusCode == 200)
         {
-            std::string response;
-            while (_client.connected())
-            {
-                std::string line = _client.readStringUntil('\n');
-                if (line == "\r")
-                {
-                    break;
-                }
-            }
-            while (_client.available())
-            {
-                char c = _client.read();
-                response += c;
-            }
-            DEBUG_PRINTF("Response: %s\n", response.c_str());
             return response;
         }
         else if (statusCode == 500)
@@ -254,7 +262,11 @@ int DexcomClient::parseHttpStatusCode(const std::string &statusLine)
     if (pos != std::string::npos)
     {
         std::string codeStr = statusLine.substr(pos + 1, 3);
-        return std::stoi(codeStr);
+        try {
+            return std::stoi(codeStr);
+        } catch (...) {
+            return 0;
+        }
     }
     return 0;
 }
