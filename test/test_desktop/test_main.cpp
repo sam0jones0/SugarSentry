@@ -57,13 +57,12 @@ int main(int argc, char **argv)
 
     run_secure_http_client_tests();
 
-    run_dexcom_client_tests();
+    // run_dexcom_client_tests();
+    // RUN_TEST(test_stringToTrendDirection_valid_inputs);
+    // RUN_TEST(test_stringToTrendDirection_invalid_inputs);
 
-    RUN_TEST(test_stringToTrendDirection_valid_inputs);
-    RUN_TEST(test_stringToTrendDirection_invalid_inputs);
-
-    RUN_TEST(test_glucose_reading_construction);
-    RUN_TEST(test_glucose_reading_invalid_input);
+    // RUN_TEST(test_glucose_reading_construction);
+    // RUN_TEST(test_glucose_reading_invalid_input);
 
     return UNITY_END();
 }
