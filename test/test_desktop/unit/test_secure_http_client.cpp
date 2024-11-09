@@ -2,6 +2,7 @@
 #include "secure_http_client.h"
 #include "mock_secure_client.h"
 #include <memory>
+#include <sstream>
 
 namespace test_secure_http_client
 {
@@ -21,7 +22,6 @@ namespace test_secure_http_client
         mock_client.reset();
     }
 
-    // Test cases
     void test_connect_success(void)
     {
         mock_client->setShouldConnect(true);
@@ -44,27 +44,52 @@ namespace test_secure_http_client
 
     void test_simple_get_request(void)
     {
-        // Setup mock response
+        // Setup mock response - note the lack of trailing newline
         std::string mockResponse =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
+            "Content-Length: 16\r\n"
             "\r\n"
-            "{\"test\": \"data\"}\r\n";
+            "{\"test\":\"data\"}"; // No trailing newline
 
         mock_client->setNextReadData(mockResponse);
         mock_client->setConnected(true);
+        mock_client->clearRequestData();
 
         HttpResponse response = client->get("/test");
 
-        // Verify request
-        std::string written = mock_client->getLastWrittenData();
-        TEST_ASSERT_TRUE(written.find("GET /test HTTP/1.1") != std::string::npos);
+        // Get the full request and print it for debugging
+        auto request_lines = mock_client->getRequestLines();
+
+        // Create debug message
+        std::stringstream debug_msg;
+        debug_msg << "Request lines received:\n";
+        for (const auto &line : request_lines)
+        {
+            debug_msg << line << "\n";
+        }
+
+        // Verify request line
+        TEST_ASSERT_TRUE_MESSAGE(
+            request_lines[0] == "GET /test HTTP/1.1",
+            debug_msg.str().c_str());
 
         // Verify response parsing
         TEST_ASSERT_EQUAL_INT(200, response.statusCode);
         TEST_ASSERT_EQUAL_STRING("application/json",
                                  response.headers["Content-Type"].c_str());
-        TEST_ASSERT_TRUE(response.body.find("{\"test\": \"data\"}") != std::string::npos);
+
+        // Add debug information for body comparison
+        std::stringstream body_debug;
+        body_debug << "Expected: '{\"test\":\"data\"}'\n"
+                   << "Actual: '" << response.body << "'\n"
+                   << "Body length: " << response.body.length() << "\n"
+                   << "Last character code: " << (int)response.body.back();
+
+        TEST_ASSERT_EQUAL_STRING_MESSAGE(
+            "{\"test\":\"data\"}",
+            response.body.c_str(),
+            body_debug.str().c_str());
     }
 
     void test_post_request_with_body(void)
@@ -73,30 +98,51 @@ namespace test_secure_http_client
         std::string mockResponse =
             "HTTP/1.1 201 Created\r\n"
             "Content-Type: application/json\r\n"
+            "Content-Length: 11\r\n"
             "\r\n"
-            "{\"id\": 123}\r\n";
+            "{\"id\":123}";
 
         mock_client->setNextReadData(mockResponse);
         mock_client->setConnected(true);
+        mock_client->clearRequestData();
 
         std::map<std::string, std::string> headers = {
             {"Content-Type", "application/json"}};
 
-        HttpResponse response = client->post("/create",
-                                             "{\"name\": \"test\"}",
-                                             headers);
+        HttpResponse response = client->post("/create", "{\"name\":\"test\"}", headers);
 
-        // Verify request
-        std::string written = mock_client->getLastWrittenData();
-        TEST_ASSERT_TRUE(written.find("POST /create HTTP/1.1") != std::string::npos);
+        // Get the full request and print it for debugging
+        auto request_lines = mock_client->getRequestLines();
 
-        // Verify headers were sent
-        written = mock_client->getLastWrittenData();
-        TEST_ASSERT_TRUE(written.find("Content-Type: application/json") != std::string::npos);
+        // Create debug message
+        std::stringstream debug_msg;
+        debug_msg << "Request lines received:\n";
+        for (const auto &line : request_lines)
+        {
+            debug_msg << line << "\n";
+        }
+
+        // Verify request line
+        TEST_ASSERT_TRUE_MESSAGE(
+            request_lines[0] == "POST /create HTTP/1.1",
+            debug_msg.str().c_str());
+
+        // Verify Content-Type header was sent
+        bool found_content_type = false;
+        for (const auto &line : request_lines)
+        {
+            if (line == "Content-Type: application/json")
+            {
+                found_content_type = true;
+                break;
+            }
+        }
+        TEST_ASSERT_TRUE_MESSAGE(found_content_type,
+                                 "Content-Type header not found in request");
 
         // Verify response
         TEST_ASSERT_EQUAL_INT(201, response.statusCode);
-        TEST_ASSERT_TRUE(response.body.find("{\"id\": 123}") != std::string::npos);
+        TEST_ASSERT_TRUE(response.body.find("{\"id\":123}") != std::string::npos);
     }
 
     void test_disconnection(void)

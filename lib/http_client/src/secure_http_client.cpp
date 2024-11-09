@@ -91,20 +91,57 @@ HttpResponse SecureHttpClient::post(const std::string &url,
 std::string SecureHttpClient::readResponse()
 {
     std::string response;
-    while (_client->connected())
+    bool headers_complete = false;
+
+    // Read headers
+    while (_client->connected() && !headers_complete)
     {
         std::string line = _client->readStringUntil('\n');
-        response += line + "\n";
-        if (line == "\r")
+        response += line;
+
+        // Check for empty line that separates headers from body
+        if (line == "\r" || line == "\r\n")
         {
+            headers_complete = true;
+        }
+
+        // Prevent infinite loop if no proper header termination
+        if (response.length() > 16384)
+        { // 16KB max header size
             break;
         }
     }
 
-    while (_client->available())
+    // Read body if there's data available
+    int content_length = 0;
+    auto it = response.find("Content-Length: ");
+    if (it != std::string::npos)
     {
-        char c = static_cast<char>(_client->read());
-        response += c;
+        size_t end = response.find("\r\n", it);
+        if (end != std::string::npos)
+        {
+            content_length = std::stoi(response.substr(it + 16, end - (it + 16)));
+        }
+    }
+
+    // Read exact content length if specified
+    if (content_length > 0)
+    {
+        while (_client->available() && content_length > 0)
+        {
+            char c = static_cast<char>(_client->read());
+            response += c;
+            content_length--;
+        }
+    }
+    else
+    {
+        // Read any remaining data
+        while (_client->available())
+        {
+            char c = static_cast<char>(_client->read());
+            response += c;
+        }
     }
 
     return response;
@@ -149,10 +186,20 @@ HttpResponse SecureHttpClient::parseResponse(const std::string &rawResponse)
     std::string body;
     while (std::getline(responseStream, line))
     {
-        body += line + "\n";
+        body += line;
+        if (!responseStream.eof())
+        {
+            body += "\n";
+        }
     }
-    response.body = body;
 
+    // Trim trailing whitespace from body
+    while (!body.empty() && (body.back() == '\n' || body.back() == '\r' || body.back() == ' '))
+    {
+        body.pop_back();
+    }
+
+    response.body = body;
     return response;
 }
 

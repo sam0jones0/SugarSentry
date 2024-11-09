@@ -71,22 +71,54 @@ public:
 
     void println(const std::string &data) override
     {
+        request_lines.push_back(data);
         written_lines.push(data + "\r\n");
     }
 
     void println() override
     {
+        request_lines.push_back("");
         written_lines.push("\r\n");
+    }
+
+    // Add methods to inspect the request
+    std::vector<std::string> getRequestLines() const
+    {
+        return request_lines;
+    }
+
+    std::string getFullRequest() const
+    {
+        std::string full_request;
+        for (const auto &line : request_lines)
+        {
+            full_request += line + "\r\n";
+        }
+        return full_request;
+    }
+
+    void clearRequestData()
+    {
+        request_lines.clear();
+        while (!written_lines.empty())
+            written_lines.pop();
+        while (!written_data.empty())
+            written_data.pop();
     }
 
     std::string readStringUntil(char terminator) override
     {
+        if (read_position >= current_read_data.length())
+        {
+            return "";
+        }
+
         size_t pos = current_read_data.find(terminator, read_position);
         if (pos == std::string::npos)
         {
-            if (read_position >= current_read_data.length())
-                return "";
-            pos = current_read_data.length();
+            std::string result = current_read_data.substr(read_position);
+            read_position = current_read_data.length();
+            return result;
         }
 
         std::string result = current_read_data.substr(read_position, pos - read_position + 1);
@@ -97,10 +129,33 @@ public:
     // Test control methods
     void setConnected(bool connected) { is_connected = connected; }
     void setShouldConnect(bool should) { should_connect = should; }
+
+    // Modify setNextReadData to properly format HTTP response
     void setNextReadData(const std::string &data)
     {
-        current_read_data = data;
+        // Ensure proper line endings
+        std::string formatted_data = data;
+        size_t pos = 0;
+        while ((pos = formatted_data.find("\n", pos)) != std::string::npos)
+        {
+            if (pos == 0 || formatted_data[pos - 1] != '\r')
+            {
+                formatted_data.insert(pos, "\r");
+                pos += 2;
+            }
+            else
+            {
+                pos += 1;
+            }
+        }
+        current_read_data = formatted_data;
         read_position = 0;
+    }
+
+    // Add method to check if all data has been read
+    bool allDataRead() const
+    {
+        return read_position >= current_read_data.length();
     }
 
     std::string getLastWrittenData()
@@ -124,6 +179,7 @@ private:
     std::queue<std::string> written_lines;
     std::string current_read_data;
     size_t read_position{0};
+    std::vector<std::string> request_lines; 
 };
 
 #endif // MOCK_SECURE_CLIENT_H
