@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <string>
 
+// TODO Rename to ISecureSocket or similar
 class ISecureClient
 {
 public:
