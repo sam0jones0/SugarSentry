@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <ctime>
-#include <ArduinoJson.h>
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
 
@@ -16,22 +15,19 @@ class GlucoseReading
 {
 public:
     /**
-     * @brief Constructs a GlucoseReading from JSON data.
+     * @brief Constructs a GlucoseReading from parsed values.
      *
-     * @param jsonGlucoseReading JSON object containing glucose reading data
+     * @param value The glucose value
+     * @param trend The trend direction as a string
+     * @param timestamp The timestamp string in Dexcom format (e.g., "Date(1234567890)")
      */
-    explicit GlucoseReading(const JsonObjectConst &jsonGlucoseReading)
+    GlucoseReading(uint16_t value, const std::string& trend, const std::string& timestamp)
+        : _value(value),
+          _trend(DexcomUtils::stringToTrendDirection(trend.c_str()))
     {
-        _value = static_cast<uint16_t>(jsonGlucoseReading["Value"].as<int>());
-        _trend = DexcomUtils::stringToTrendDirection(jsonGlucoseReading["Trend"].as<const char *>());
-
-        const char *wtStr = jsonGlucoseReading["WT"].as<const char *>();
-        if (wtStr && *wtStr == 'D')
-        {
-            _timestamp = strtoull(wtStr + 5, nullptr, 10) / 1000; // milliseconds to seconds
-        }
-        else
-        {
+        if (!timestamp.empty() && timestamp[0] == 'D') {
+            _timestamp = strtoull(timestamp.c_str() + 5, nullptr, 10) / 1000; // milliseconds to seconds
+        } else {
             _timestamp = 0;
         }
     }

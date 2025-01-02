@@ -6,8 +6,6 @@
 #include <memory>
 #include <map>
 
-#include <ArduinoJson.h>
-
 #include "dexcom_client.h"
 #include "dexcom_utils.h"
 #include <debug_print.h>
@@ -24,11 +22,13 @@
 #endif
 
 DexcomClient::DexcomClient(std::shared_ptr<IHttpClient> httpClient,
+                           std::shared_ptr<IJsonParser> jsonParser,
                            const std::string &username,
                            const std::string &account_id,
                            const std::string &password,
                            bool ous)
     : _httpClient(std::move(httpClient)),
+      _jsonParser(std::move(jsonParser)),
       _base_url(ous ? DexcomConst::DEXCOM_BASE_URL_OUS : DexcomConst::DEXCOM_BASE_URL),
       _password(password),
       _account_id(account_id),
@@ -52,7 +52,7 @@ std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, u
     auto fetchAndParseReadings = [this, minutes, max_count, &readings]()
     {
         std::string response = getGlucoseReadingsRaw(minutes, max_count);
-        readings = parseGlucoseReadings(response);
+        readings = _jsonParser->parseGlucoseReadings(response);
     };
 
     try
@@ -189,7 +189,7 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
                 DEBUG_PRINTF("Response: %s\n", response.body.c_str());
                 return response.body;
             } else if (response.statusCode == 401) {
-                if (auto error = handleResponse(response.body)) {
+                if (auto error = _jsonParser->parseErrorResponse(response.body)) {
                     throw *error;
                 }
                 throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
@@ -212,62 +212,6 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
     return "Max retries reached";
 }
 
-
-std::optional<DexcomError> DexcomClient::handleResponse(const std::string &response)
-{
-    constexpr size_t ERROR_JSON_SIZE = 512;
-    StaticJsonDocument<ERROR_JSON_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, response);
-
-    if (error)
-    {
-        return std::nullopt;
-    }
-
-    std::string code = doc["Code"].as<std::string>();
-    std::string message = doc["Message"].as<std::string>();
-
-    if (!code.empty())
-    {
-        if (code == "SessionIdNotFound")
-        {
-            return SessionError(DexcomErrors::SessionError::NOT_FOUND);
-        }
-        else if (code == "SessionNotValid")
-        {
-            return SessionError(DexcomErrors::SessionError::INVALID);
-        }
-        else if (code == "SSO_AuthenticateMaxAttemptsExceeed")
-        {
-            return AccountError(DexcomErrors::AccountError::MAX_ATTEMPTS);
-        }
-        else if (code == "SSO_InternalError")
-        {
-            if (message.find("Cannot Authenticate") != std::string::npos)
-            {
-                return AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
-            }
-        }
-        else if (code == "InvalidArgument")
-        {
-            if (message.find("accountName") != std::string::npos)
-            {
-                return ArgumentError(DexcomErrors::ArgumentError::USERNAME_INVALID);
-            }
-            else if (message.find("password") != std::string::npos)
-            {
-                return ArgumentError(DexcomErrors::ArgumentError::PASSWORD_INVALID);
-            }
-            else if (message.find("UUID") != std::string::npos)
-            {
-                return ArgumentError(DexcomErrors::ArgumentError::ACCOUNT_ID_INVALID);
-            }
-        }
-    }
-
-    return std::nullopt;
-}
-
 std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_count)
 {
     if (minutes == 0 || minutes > DexcomConst::MAX_MINUTES)
@@ -288,55 +232,4 @@ std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_c
     }
 
     return response;
-}
-
-std::vector<GlucoseReading> DexcomClient::parseGlucoseReadings(const std::string &response)
-{
-    std::vector<GlucoseReading> readings;
-    readings.reserve(DexcomConst::MAX_MAX_COUNT);
-
-    DEBUG_PRINT("Parsing glucose readings. Raw response:");
-    DEBUG_PRINT(response.c_str());
-
-    StaticJsonDocument<256> doc;
-    size_t pos = 0;
-    while (pos < response.length())
-    {
-        size_t start = response.find('{', pos);
-        if (start == std::string::npos)
-        {
-            DEBUG_PRINT("No more JSON objects found in response");
-            break;
-        }
-
-        size_t end = response.find('}', start);
-        if (end == std::string::npos)
-        {
-            DEBUG_PRINT("Incomplete JSON object found in response");
-            break;
-        }
-
-        std::string jsonObject = response.substr(start, end - start + 1);
-        DEBUG_PRINT("Parsing JSON object: ");
-        DEBUG_PRINT(jsonObject.c_str());
-
-        DeserializationError err = deserializeJson(doc, jsonObject);
-        if (err == DeserializationError::Ok)
-        {
-            readings.emplace_back(doc.as<JsonObjectConst>());
-            DEBUG_PRINT("Successfully parsed glucose reading");
-        }
-        else
-        {
-            DEBUG_PRINT("Failed to parse JSON object: ");
-            DEBUG_PRINT(err.c_str());
-        }
-        doc.clear();
-        pos = end + 1;
-    }
-
-    DEBUG_PRINT("Total glucose readings parsed: ");
-    DEBUG_PRINTF("%d\n", readings.size());
-
-    return readings;
 }

@@ -263,3 +263,27 @@ SecureHttpClient accepts ISecureClient
 All dependencies are passed through constructors
 The code is now more maintainable, testable, and follows SOLID principles with clear separation of concerns.
 ```
+
+----
+
+Task 4 (in progress)
+
+Abstract JSON Parsing Logic
+
+Currently, the DexcomClient class directly uses ArduinoJson for JSON parsing within its methods like parseGlucoseReadings() and handleResponse(). This tight coupling makes unit testing difficult and ties the class to a specific JSON library.
+
+Task: Create an interface IJsonParser with methods needed for JSON parsing (e.g., parseObject, parseArray). Implement this interface with a class ArduinoJsonParser that uses ArduinoJson. Inject IJsonParser into DexcomClient via dependency injection. This allows you to mock the parser in tests and replace the JSON library if needed in the future.
+
+All tests are now passing. Let's summarize what we did to fix the issues:
+
+Changed the error handling approach from std::optional<DexcomError> to std::unique_ptr<DexcomError> to properly handle polymorphic types and prevent object slicing.
+Added the <memory> header to both interface files since we're using std::unique_ptr.
+Updated the test cases to work with unique_ptr instead of optional.
+The changes we made ensure that:
+
+Error objects maintain their derived type information through polymorphism
+Memory is managed properly using smart pointers
+The interface is cleaner and more type-safe
+
+----
+
