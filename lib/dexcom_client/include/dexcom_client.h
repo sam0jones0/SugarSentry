@@ -1,7 +1,7 @@
 #ifndef DEXCOM_CLIENT_H
 #define DEXCOM_CLIENT_H
 
-#include <i_secure_client.h>
+#include <i_http_client.h>
 #include <vector>
 #include <optional>
 #include <string>
@@ -32,7 +32,7 @@ public:
      * @throws AccountError if authentication fails
      * @throws SessionError if session creation fails
      */
-    DexcomClient(ISecureClient &client,
+    DexcomClient(std::shared_ptr<IHttpClient> httpClient,
                  const std::string &username = "",
                  const std::string &account_id = "",
                  const std::string &password = "",
@@ -72,13 +72,12 @@ public:
     std::optional<GlucoseReading> getCurrentGlucoseReading();
 
 private:
-    ISecureClient &_client;
+    std::shared_ptr<IHttpClient> _httpClient;
     std::string _base_url;
     std::string _password;
     std::string _account_id;
     std::string _username;
     std::string _session_id;
-    bool _connected;
 
     void createSession();
 
@@ -95,11 +94,6 @@ private:
 
     std::vector<GlucoseReading> parseGlucoseReadings(const std::string &response);
 
-    bool ensureConnected();
-
-    void disconnect();
-
-    int parseHttpStatusCode(const std::string &statusLine);
 };
 
 #endif // DEXCOM_CLIENT_H

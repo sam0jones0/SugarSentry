@@ -9,26 +9,22 @@
 #include <algorithm>
 #include "debug_print.h"
 
-DexcomClient::DexcomClient(ISecureClient &client,
+DexcomClient::DexcomClient(std::shared_ptr<IHttpClient> httpClient,
                            const std::string &username,
                            const std::string &account_id,
                            const std::string &password,
                            bool ous)
-    : _client(client),
+    : _httpClient(std::move(httpClient)),
       _base_url(ous ? DexcomConst::DEXCOM_BASE_URL_OUS : DexcomConst::DEXCOM_BASE_URL),
       _password(password),
       _account_id(account_id),
       _username(username),
-      _session_id(""),
-      _connected(false)
+      _session_id("")
 {
     createSession();
 }
 
-DexcomClient::~DexcomClient()
-{
-    disconnect();
-}
+DexcomClient::~DexcomClient() = default;
 
 std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, uint16_t max_count)
 {
@@ -148,116 +144,48 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
 {
     for (int attempt = 0; attempt < DexcomConst::MAX_POST_RETRIES; ++attempt)
     {
-        if (!ensureConnected())
-        {
-            DEBUG_PRINT("Connection failed");
-            continue;
-        }
-
-        std::string url = "/ShareWebServices/Services/" + endpoint;
-        if (!params.empty())
-        {
-            url += "?" + params;
-        }
-
-        DEBUG_PRINTF("Attempt %d: Sending request to %s\n", attempt + 1, url.c_str());
-        DEBUG_PRINTF("Headers:\nHost: %s\nContent-Type: application/json\n", _base_url.c_str());
-        if (!json.empty())
-        {
-            DEBUG_PRINTF("Body: %s\n", json.c_str());
-        }
-
-        _client.println("POST " + url + " HTTP/1.1");
-        _client.println("Host: " + _base_url);
-        _client.println("Content-Type: application/json");
-        _client.println("Connection: keep-alive");
-        if (!json.empty())
-        {
-            _client.println("Content-Length: " + std::to_string(json.length()));
-            _client.println();
-            _client.println(json);
-        }
-        else
-        {
-            _client.println();
-        }
-
-        std::string statusLine = _client.readStringUntil('\n');
-        int statusCode = parseHttpStatusCode(statusLine);
-
-        DEBUG_PRINTF("Received status code: %d\n", statusCode);
-
-        if (statusCode == 200)
-        {
-            std::string response;
-            while (_client.connected())
-            {
-                std::string line = _client.readStringUntil('\n');
-                if (line == "\r")
-                {
-                    break;
-                }
+        try {
+            if (!_httpClient->isConnected() && !_httpClient->connect(_base_url, 443)) {
+                DEBUG_PRINT("Connection failed");
+                continue;
             }
-            while (_client.available())
-            {
-                char c = _client.read();
-                response += c;
+
+            std::string url = "/ShareWebServices/Services/" + endpoint;
+            if (!params.empty()) {
+                url += "?" + params;
             }
-            DEBUG_PRINTF("Response: %s\n", response.c_str());
-            return response;
-        }
-        else if (statusCode == 500)
-        {
-            DEBUG_PRINT("Received 500 error, retrying...");
-            disconnect();
-            PLATFORM_DELAY(1000 * (attempt + 1)); // Exponential backoff
-        }
-        else
-        {
-            disconnect();
-            return "HTTP Error: " + std::to_string(statusCode);
+
+            DEBUG_PRINTF("Attempt %d: Sending request to %s\n", attempt + 1, url.c_str());
+
+            std::map<std::string, std::string> headers = {
+                {"Content-Type", "application/json"},
+                {"Connection", "keep-alive"}
+            };
+
+            HttpResponse response = _httpClient->post(url, json, headers);
+
+            DEBUG_PRINTF("Received status code: %d\n", response.statusCode);
+
+            if (response.statusCode == 200) {
+                DEBUG_PRINTF("Response: %s\n", response.body.c_str());
+                return response.body;
+            } else if (response.statusCode == 500) {
+                DEBUG_PRINT("Received 500 error, retrying...");
+                _httpClient->disconnect();
+                PLATFORM_DELAY(1000 * (attempt + 1)); // Exponential backoff
+            } else {
+                _httpClient->disconnect();
+                return "HTTP Error: " + std::to_string(response.statusCode);
+            }
+        } catch (const std::exception& e) {
+            DEBUG_PRINTF("Request failed: %s\n", e.what());
+            _httpClient->disconnect();
+            PLATFORM_DELAY(1000 * (attempt + 1));
         }
     }
     return "Max retries reached";
 }
 
-bool DexcomClient::ensureConnected()
-{
-    if (!_connected)
-    {
-        _connected = _client.connect(_base_url.c_str(), 443);
-        if (_connected)
-        {
-            DEBUG_PRINT("Connected to server");
-        }
-        else
-        {
-            DEBUG_PRINT("Failed to connect to server");
-        }
-    }
-    return _connected;
-}
-
-void DexcomClient::disconnect()
-{
-    if (_connected)
-    {
-        _client.stop();
-        _connected = false;
-        DEBUG_PRINT("Disconnected from server");
-    }
-}
-
-int DexcomClient::parseHttpStatusCode(const std::string &statusLine)
-{
-    size_t pos = statusLine.find(' ');
-    if (pos != std::string::npos)
-    {
-        std::string codeStr = statusLine.substr(pos + 1, 3);
-        return std::stoi(codeStr);
-    }
-    return 0;
-}
 
 std::optional<DexcomError> DexcomClient::handleResponse(const std::string &response)
 {
