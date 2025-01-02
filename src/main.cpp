@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <memory>
 #include "config.h"
 #include "dexcom_constants.h"
 #include "esp32_secure_client.h"
 #include "dexcom_client.h"
+#include "secure_http_client.h"
 
 void setupSerial()
 {
@@ -117,12 +119,14 @@ void setup()
 
   resolveDexcomHost();
 
-  ESP32SecureClient secureClient;
-  secureClient.setCACert(DexcomConst::rootCA);
-  secureClient.setTimeout(30000); // 30 seconds timeout
+  auto secureClient = std::make_shared<ESP32SecureClient>();
+  secureClient->setCACert(DexcomConst::rootCA);
+  secureClient->setTimeout(30000); // 30 seconds timeout
+
+  auto httpClient = std::make_shared<SecureHttpClient>(secureClient);
 
   Serial.println("Creating DexcomClient...");
-  DexcomClient dexcomClient(secureClient, DEXCOM_USERNAME, DEXCOM_ACCOUNT_ID, DEXCOM_PASSWORD, true);
+  DexcomClient dexcomClient(httpClient, DEXCOM_USERNAME, DEXCOM_ACCOUNT_ID, DEXCOM_PASSWORD, true);
   Serial.println("DexcomClient created successfully");
 
   Serial.println("Attempting to fetch glucose reading...");

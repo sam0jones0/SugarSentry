@@ -1,13 +1,27 @@
-#include "dexcom_client.h"
-#include "dexcom_utils.h"
-#include <ArduinoJson.h>
-#include <i_secure_client.h>
 #include <sstream>
 #include <chrono>
 #include <thread>
 #include <string>
 #include <algorithm>
-#include "debug_print.h"
+#include <memory>
+#include <map>
+
+#include <ArduinoJson.h>
+
+#include "dexcom_client.h"
+#include "dexcom_utils.h"
+#include <debug_print.h>
+
+// Platform-specific delay macro
+#ifndef PLATFORM_DELAY
+#ifdef ARDUINO
+#define PLATFORM_DELAY(ms) delay(ms)
+#else
+#include <chrono>
+#include <thread>
+#define PLATFORM_DELAY(ms) std::this_thread::sleep_for(std::chrono::milliseconds(ms))
+#endif
+#endif
 
 DexcomClient::DexcomClient(std::shared_ptr<IHttpClient> httpClient,
                            const std::string &username,
@@ -21,7 +35,12 @@ DexcomClient::DexcomClient(std::shared_ptr<IHttpClient> httpClient,
       _username(username),
       _session_id("")
 {
-    createSession();
+    // Try to connect first
+    if (!_httpClient->connect(_base_url, 443)) {
+        DEBUG_PRINT("Initial connection failed");
+        // Don't throw here, let createSession handle the error
+    }
+    createSession(); // This will handle both connection and authentication errors
 }
 
 DexcomClient::~DexcomClient() = default;
@@ -169,6 +188,11 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
             if (response.statusCode == 200) {
                 DEBUG_PRINTF("Response: %s\n", response.body.c_str());
                 return response.body;
+            } else if (response.statusCode == 401) {
+                if (auto error = handleResponse(response.body)) {
+                    throw *error;
+                }
+                throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
             } else if (response.statusCode == 500) {
                 DEBUG_PRINT("Received 500 error, retrying...");
                 _httpClient->disconnect();
@@ -177,6 +201,8 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
                 _httpClient->disconnect();
                 return "HTTP Error: " + std::to_string(response.statusCode);
             }
+        } catch (const DexcomError& e) {
+            throw;  // Re-throw DexcomError exceptions
         } catch (const std::exception& e) {
             DEBUG_PRINTF("Request failed: %s\n", e.what());
             _httpClient->disconnect();
