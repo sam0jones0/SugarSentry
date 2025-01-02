@@ -30,8 +30,8 @@ std::optional<bool> ArduinoJsonValue::getBool(const std::string& key) const {
 }
 
 std::shared_ptr<IJsonValue> ArduinoJsonParser::parseObject(const std::string& jsonString) {
-    StaticJsonDocument<JSON_BUFFER_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, jsonString);
+    auto doc = std::make_unique<JsonDocument>();
+    DeserializationError error = deserializeJson(*doc, jsonString);
 
     if (error) {
         DEBUG_PRINT("Failed to parse JSON object: ");
@@ -39,14 +39,18 @@ std::shared_ptr<IJsonValue> ArduinoJsonParser::parseObject(const std::string& js
         return nullptr;
     }
 
-    JsonObjectConst obj = doc.as<JsonObjectConst>();
-    return std::make_shared<ArduinoJsonValue>(obj);
+    if (!doc->is<JsonObject>()) {
+        DEBUG_PRINT("JSON is not an object");
+        return nullptr;
+    }
+
+    return std::make_shared<ArduinoJsonValue>(*doc);
 }
 
 std::vector<std::shared_ptr<IJsonValue>> ArduinoJsonParser::parseArray(const std::string& jsonString) {
     std::vector<std::shared_ptr<IJsonValue>> result;
-    StaticJsonDocument<JSON_BUFFER_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, jsonString);
+    auto arrayDoc = std::make_unique<JsonDocument>();
+    DeserializationError error = deserializeJson(*arrayDoc, jsonString);
 
     if (error) {
         DEBUG_PRINT("Failed to parse JSON array: ");
@@ -54,9 +58,16 @@ std::vector<std::shared_ptr<IJsonValue>> ArduinoJsonParser::parseArray(const std
         return result;
     }
 
-    JsonArrayConst array = doc.as<JsonArrayConst>();
-    for (JsonObjectConst obj : array) {
-        result.push_back(std::make_shared<ArduinoJsonValue>(obj));
+    if (!arrayDoc->is<JsonArray>()) {
+        DEBUG_PRINT("JSON is not an array");
+        return result;
+    }
+
+    JsonArrayConst array = arrayDoc->as<JsonArrayConst>();
+    for (JsonVariantConst item : array) {
+        auto itemDoc = std::make_unique<JsonDocument>();
+        itemDoc->to<JsonObject>().set(item);
+        result.push_back(std::make_shared<ArduinoJsonValue>(*itemDoc));
     }
 
     return result;

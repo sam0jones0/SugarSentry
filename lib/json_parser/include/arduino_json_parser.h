@@ -9,10 +9,14 @@
  */
 class ArduinoJsonValue : public IJsonValue {
 private:
-    JsonObjectConst _obj;
+    StaticJsonDocument<2048> _doc;  // Own the document
+    JsonObjectConst _obj;           // Reference to document's data
 
 public:
-    explicit ArduinoJsonValue(JsonObjectConst obj) : _obj(obj) {}
+    explicit ArduinoJsonValue(const StaticJsonDocument<2048>& doc) 
+        : _doc(doc)  // Copy the document
+        , _obj(_doc.as<JsonObjectConst>())  // Get reference from our copy
+    {}
 
     std::optional<std::string> getString(const std::string& key) const override;
     std::optional<int> getInt(const std::string& key) const override;
@@ -30,6 +34,7 @@ public:
 
 private:
     static constexpr size_t JSON_BUFFER_SIZE = 2048;  // Adjust size as needed
+    using JsonDocument = StaticJsonDocument<JSON_BUFFER_SIZE>;
 };
 
 #endif // ARDUINO_JSON_PARSER_H

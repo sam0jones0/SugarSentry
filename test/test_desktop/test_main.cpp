@@ -1,15 +1,27 @@
-#include <unity.h>
+#include <gtest/gtest.h>
 
-// Forward declarations of test-specific setup/teardown
-extern void setUp(void);
-extern void tearDown(void);
+#if defined(ARDUINO)
+#include <Arduino.h>
 
-int main(int argc, char **argv) {
-    UNITY_BEGIN();
+void setup() {
+    // should be the same value as for the `test_speed` option in "platformio.ini"
+    Serial.begin(115200);
 
-    // Run all test groups
-    extern void run_arduino_json_parser_tests();
-    run_arduino_json_parser_tests();
-
-    return UNITY_END();
+    ::testing::InitGoogleTest();
 }
+
+void loop() {
+    // Run tests
+    if (RUN_ALL_TESTS())
+    ;
+
+    // sleep for 1 sec
+    delay(1000);
+}
+
+#else
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+#endif

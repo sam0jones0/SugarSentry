@@ -289,7 +289,7 @@ The interface is cleaner and more type-safe
 
 ----
 
-Task 5
+Task 5 (in progress)
 
 ```
 Separate Parsing Logic from Network Logic
@@ -339,4 +339,6 @@ Improved testability through interfaces
 Flexible architecture allowing different implementations
 No direct ArduinoJson dependencies in business logic
 The implementation follows the target architecture diagram exactly, with DexcomClient using IHttpClient for network operations and IGlucoseReadingParser for parsing, which in turn uses IJsonParser for low-level JSON operations.
+
+Tests have been written... just need to verify
 ```
