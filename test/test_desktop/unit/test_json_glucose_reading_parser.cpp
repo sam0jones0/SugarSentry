@@ -1,56 +1,9 @@
 #include <gtest/gtest.h>
 #include "json_glucose_reading_parser.h"
 #include "dexcom_constants.h"
-#include "i_json_value.h"
+#include "../mocks/mock_json_parser.h"
+#include "../mocks/mock_json_value.h"
 #include <memory>
-
-// Mock IJsonValue implementation
-class MockJsonValue : public IJsonValue {
-public:
-    std::optional<std::string> getString(const std::string& key) const override {
-        if (key == "Trend") return "Flat";
-        if (key == "WT") return "Date(1609459200000)";
-        return std::nullopt;
-    }
-    
-    std::optional<int> getInt(const std::string& key) const override {
-        if (key == "Value") return 120;
-        return std::nullopt;
-    }
-    
-    std::optional<double> getDouble(const std::string& key) const override {
-        return std::nullopt;
-    }
-    
-    std::optional<bool> getBool(const std::string& key) const override {
-        return std::nullopt;
-    }
-};
-
-// Mock IJsonParser implementation
-class MockJsonParser : public IJsonParser {
-public:
-    std::shared_ptr<IJsonValue> parseObject(const std::string& jsonString) override {
-        // Mock implementation that returns predefined values based on input
-        if (jsonString == "invalid") {
-            return nullptr;
-        }
-        return std::make_shared<MockJsonValue>();
-    }
-
-    std::vector<std::shared_ptr<IJsonValue>> parseArray(const std::string& jsonString) override {
-        // Mock implementation that returns predefined array based on input
-        if (jsonString == "[]" || jsonString == "invalid") {
-            return {};
-        }
-
-        // Return array with two mock readings
-        std::vector<std::shared_ptr<IJsonValue>> result;
-        result.push_back(std::make_shared<MockJsonValue>());
-        result.push_back(std::make_shared<MockJsonValue>());
-        return result;
-    }
-};
 
 class JsonGlucoseReadingParserTest : public ::testing::Test {
 protected:
