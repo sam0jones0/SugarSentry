@@ -266,8 +266,9 @@ The code is now more maintainable, testable, and follows SOLID principles with c
 
 ----
 
-Task 4 (in progress)
+Task 4
 
+```
 Abstract JSON Parsing Logic
 
 Currently, the DexcomClient class directly uses ArduinoJson for JSON parsing within its methods like parseGlucoseReadings() and handleResponse(). This tight coupling makes unit testing difficult and ties the class to a specific JSON library.
@@ -284,6 +285,7 @@ The changes we made ensure that:
 Error objects maintain their derived type information through polymorphism
 Memory is managed properly using smart pointers
 The interface is cleaner and more type-safe
+```
 
 ----
 
