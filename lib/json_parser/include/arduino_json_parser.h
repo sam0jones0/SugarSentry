@@ -1,23 +1,35 @@
 #ifndef ARDUINO_JSON_PARSER_H
 #define ARDUINO_JSON_PARSER_H
 
+#include "i_json_value.h"
 #include <ArduinoJson.h>
-#include <memory>
-#include "i_json_parser.h"
+
+/**
+ * @brief ArduinoJson implementation of IJsonValue
+ */
+class ArduinoJsonValue : public IJsonValue {
+private:
+    JsonObjectConst _obj;
+
+public:
+    explicit ArduinoJsonValue(JsonObjectConst obj) : _obj(obj) {}
+
+    std::optional<std::string> getString(const std::string& key) const override;
+    std::optional<int> getInt(const std::string& key) const override;
+    std::optional<double> getDouble(const std::string& key) const override;
+    std::optional<bool> getBool(const std::string& key) const override;
+};
 
 /**
  * @brief ArduinoJson implementation of IJsonParser
  */
 class ArduinoJsonParser : public IJsonParser {
 public:
-    std::optional<GlucoseReading> parseGlucoseReading(const std::string& jsonString) override;
-    std::vector<GlucoseReading> parseGlucoseReadings(const std::string& jsonString) override;
-    std::unique_ptr<DexcomError> parseErrorResponse(const std::string& jsonString) override;
+    std::shared_ptr<IJsonValue> parseObject(const std::string& jsonString) override;
+    std::vector<std::shared_ptr<IJsonValue>> parseArray(const std::string& jsonString) override;
 
 private:
-    static constexpr size_t ERROR_JSON_SIZE = 512;
-    static constexpr size_t GLUCOSE_JSON_SIZE = 256;
-    static constexpr size_t GLUCOSE_ARRAY_SIZE = 32768; // Increased size for array parsing
+    static constexpr size_t JSON_BUFFER_SIZE = 2048;  // Adjust size as needed
 };
 
 #endif // ARDUINO_JSON_PARSER_H

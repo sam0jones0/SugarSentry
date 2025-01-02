@@ -1,5 +1,10 @@
 #include "json_glucose_reading_parser.h"
 
+JsonGlucoseReadingParser::JsonGlucoseReadingParser(std::shared_ptr<IJsonParser> jsonParser)
+    : _jsonParser(std::move(jsonParser))
+{
+}
+
 std::vector<GlucoseReading> JsonGlucoseReadingParser::parse(const std::string &response)
 {
     std::vector<GlucoseReading> readings;
@@ -8,35 +13,18 @@ std::vector<GlucoseReading> JsonGlucoseReadingParser::parse(const std::string &r
     DEBUG_PRINT("Parsing glucose readings. Raw response:");
     DEBUG_PRINT(response.c_str());
 
-    size_t pos = 0;
-    while (pos < response.length())
-    {
-        size_t start = response.find('{', pos);
-        if (start == std::string::npos)
-        {
-            DEBUG_PRINT("No more JSON objects found in response");
-            break;
-        }
+    auto jsonArray = _jsonParser->parseArray(response);
+    if (!jsonArray) {
+        DEBUG_PRINT("Failed to parse JSON array");
+        return readings;
+    }
 
-        size_t end = response.find('}', start);
-        if (end == std::string::npos)
-        {
-            DEBUG_PRINT("Incomplete JSON object found in response");
-            break;
-        }
-
-        std::string jsonObject = response.substr(start, end - start + 1);
-        DEBUG_PRINT("Parsing JSON object: ");
-        DEBUG_PRINT(jsonObject.c_str());
-
-        auto reading = parseJsonObject(jsonObject);
-        if (reading)
-        {
+    for (const auto& jsonObj : *jsonArray) {
+        auto reading = parseJsonObject(jsonObj);
+        if (reading) {
             readings.push_back(*reading);
             DEBUG_PRINT("Successfully parsed glucose reading");
         }
-
-        pos = end + 1;
     }
 
     DEBUG_PRINT("Total glucose readings parsed: ");
@@ -47,17 +35,17 @@ std::vector<GlucoseReading> JsonGlucoseReadingParser::parse(const std::string &r
 
 std::optional<GlucoseReading> JsonGlucoseReadingParser::parseJsonObject(const std::string &jsonObject)
 {
-    StaticJsonDocument<DexcomConst::MAX_READING_JSON_SIZE> doc;
-    DeserializationError err = deserializeJson(doc, jsonObject);
-
-    if (err == DeserializationError::Ok)
-    {
-        return GlucoseReading(doc.as<JsonObjectConst>());
+    auto obj = _jsonParser->parseObject(jsonObject);
+    if (!obj) {
+        DEBUG_PRINT("Failed to parse JSON object");
+        return std::nullopt;
     }
-    else
-    {
-        DEBUG_PRINT("Failed to parse JSON object: ");
-        DEBUG_PRINT(err.c_str());
+
+    try {
+        return GlucoseReading(*obj);
+    } catch (const std::exception& e) {
+        DEBUG_PRINT("Failed to create GlucoseReading: ");
+        DEBUG_PRINT(e.what());
         return std::nullopt;
     }
 }

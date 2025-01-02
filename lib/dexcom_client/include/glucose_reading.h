@@ -3,8 +3,10 @@
 
 #include <cstdint>
 #include <ctime>
+#include <memory>
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
+#include "i_json_value.h"
 
 /**
  * @file glucose_reading.h
@@ -21,16 +23,18 @@ public:
      * @param trend The trend direction as a string
      * @param timestamp The timestamp string in Dexcom format (e.g., "Date(1234567890)")
      */
-    GlucoseReading(uint16_t value, const std::string& trend, const std::string& timestamp)
-        : _value(value),
-          _trend(DexcomUtils::stringToTrendDirection(trend.c_str()))
-    {
-        if (!timestamp.empty() && timestamp[0] == 'D') {
-            _timestamp = strtoull(timestamp.c_str() + 5, nullptr, 10) / 1000; // milliseconds to seconds
-        } else {
-            _timestamp = 0;
-        }
-    }
+    /**
+     * @brief Constructs a GlucoseReading from raw values.
+     */
+    GlucoseReading(uint16_t value, const std::string& trend, const std::string& timestamp);
+
+    /**
+     * @brief Constructs a GlucoseReading from a JSON value.
+     *
+     * @param json The JSON value containing glucose reading data
+     * @throws std::runtime_error if required fields are missing or invalid
+     */
+    explicit GlucoseReading(const IJsonValue& json);
 
     uint16_t getValue() const noexcept { return _value; }
     uint16_t getMgDl() const noexcept { return _value; }

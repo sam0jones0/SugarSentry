@@ -289,3 +289,54 @@ The interface is cleaner and more type-safe
 
 ----
 
+Task 5
+
+```
+Separate Parsing Logic from Network Logic
+
+Task:
+
+    Create a Separate Parser Class:
+        Define an interface IGlucoseReadingParser with a method like parse(const std::string& response).
+        Implement this interface in a class GlucoseReadingParser that handles parsing JSON strings into GlucoseReading objects.
+    Refactor DexcomClient:
+        Remove the JSON parsing code from DexcomClient.
+        Inject an instance of IGlucoseReadingParser into DexcomClient via constructor or setter injection.
+        DexcomClient will use this parser to convert raw JSON responses into domain objects.
+    Benefits:
+        Single Responsibility: DexcomClient focuses solely on network communication.
+        Separation of Concerns: Parsing logic is encapsulated within its own class.
+        Testability: You can test parsing logic independently from networking logic.
+        Maintainability: Changes to parsing (e.g., handling new JSON formats) won't affect networking code.
+
+I.e.
+
+DexcomClient
+   |
+   +-- uses --> IHttpClient (for network communication)
+   |
+   +-- uses --> IGlucoseReadingParser (for parsing readings)
+                        |
+                        +-- uses --> IJsonParser (for JSON parsing)
+
+
+Successfully separated parsing logic from network logic by implementing a clean layered architecture:
+
+Interface Layer:
+
+IJsonValue/IJsonParser: Generic JSON operations
+IGlucoseReadingParser: Domain-specific parsing
+IHttpClient: Network operations
+Implementation Layer:
+
+ArduinoJsonParser: Implements IJsonParser using ArduinoJson
+JsonGlucoseReadingParser: Implements IGlucoseReadingParser using IJsonParser
+GlucoseReading: Domain model using IJsonValue
+Benefits:
+
+Clear separation of concerns
+Improved testability through interfaces
+Flexible architecture allowing different implementations
+No direct ArduinoJson dependencies in business logic
+The implementation follows the target architecture diagram exactly, with DexcomClient using IHttpClient for network operations and IGlucoseReadingParser for parsing, which in turn uses IJsonParser for low-level JSON operations.
+```

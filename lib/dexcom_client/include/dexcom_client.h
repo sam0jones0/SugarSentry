@@ -9,7 +9,7 @@
 #include <memory>
 
 #include "i_http_client.h"
-#include "i_json_parser.h"
+#include "i_glucose_reading_parser.h"
 #include "dexcom_constants.h"
 #include "dexcom_errors.h"
 #include "glucose_reading.h"
@@ -25,7 +25,7 @@
 class DexcomClient {
 private:
     std::shared_ptr<IHttpClient> _httpClient;
-    std::shared_ptr<IJsonParser> _jsonParser;
+    std::shared_ptr<IGlucoseReadingParser> _glucoseParser;
     std::string _base_url;
     std::string _password;
     std::string _account_id;
@@ -56,7 +56,7 @@ public:
      */
     DexcomClient(
         std::shared_ptr<IHttpClient> httpClient,
-        std::shared_ptr<IJsonParser> jsonParser,
+        std::shared_ptr<IGlucoseReadingParser> glucoseParser,
         const std::string& username = "",
         const std::string& account_id = "",
         const std::string& password = "",

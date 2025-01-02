@@ -22,13 +22,13 @@
 #endif
 
 DexcomClient::DexcomClient(std::shared_ptr<IHttpClient> httpClient,
-                           std::shared_ptr<IJsonParser> jsonParser,
+                           std::shared_ptr<IGlucoseReadingParser> glucoseParser,
                            const std::string &username,
                            const std::string &account_id,
                            const std::string &password,
                            bool ous)
     : _httpClient(std::move(httpClient)),
-      _jsonParser(std::move(jsonParser)),
+      _glucoseParser(std::move(glucoseParser)),
       _base_url(ous ? DexcomConst::DEXCOM_BASE_URL_OUS : DexcomConst::DEXCOM_BASE_URL),
       _password(password),
       _account_id(account_id),
@@ -52,7 +52,7 @@ std::vector<GlucoseReading> DexcomClient::getGlucoseReadings(uint16_t minutes, u
     auto fetchAndParseReadings = [this, minutes, max_count, &readings]()
     {
         std::string response = getGlucoseReadingsRaw(minutes, max_count);
-        readings = _jsonParser->parseGlucoseReadings(response);
+        readings = _glucoseParser->parse(response);
     };
 
     try
@@ -189,9 +189,6 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
                 DEBUG_PRINTF("Response: %s\n", response.body.c_str());
                 return response.body;
             } else if (response.statusCode == 401) {
-                if (auto error = _jsonParser->parseErrorResponse(response.body)) {
-                    throw *error;
-                }
                 throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
             } else if (response.statusCode == 500) {
                 DEBUG_PRINT("Received 500 error, retrying...");
