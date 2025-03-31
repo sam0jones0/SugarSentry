@@ -362,3 +362,19 @@ Task 11
 Refactor mocking for the `IJsonParser` interface to use a standardized GMock implementation.
 
 ----
+
+Task 12
+
+Refactored mocking for the `IJsonParser` interface to use a standardized GMock implementation:
+
+- Created a clean GMock implementation for the `IJsonParser` interface focusing only on the mocked methods
+- Removed helper methods and hardcoded default behaviors from the mock class
+- Used `MOCK_METHOD` macros for both `parseObject` and `parseArray` methods
+- Updated test fixture to use `testing::NiceMock<MockJsonParser>` for proper behavior
+- Refactored test cases to set up expectations explicitly instead of relying on default behaviors
+- Created a reusable factory function for mock values to improve test code readability
+- Ensured all tests pass with the standardized GMock implementation
+
+This standardized approach improves maintainability by centralizing the mock implementation in a single location, ensuring consistency across all tests that use the IJsonParser interface, and making the test code easier to understand and maintain.
+
+----

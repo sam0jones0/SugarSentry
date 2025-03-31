@@ -7,12 +7,11 @@
 
 class JsonGlucoseReadingParserTest : public ::testing::Test {
 protected:
-    std::shared_ptr<MockJsonParser> mock_json_parser;
+    std::shared_ptr<testing::NiceMock<MockJsonParser>> mock_json_parser;
     std::unique_ptr<JsonGlucoseReadingParser> parser;
 
     void SetUp() override {
-        mock_json_parser = std::make_shared<MockJsonParser>();
-        mock_json_parser->SetDefaultBehaviors();
+        mock_json_parser = std::make_shared<testing::NiceMock<MockJsonParser>>();
         parser = std::make_unique<JsonGlucoseReadingParser>(mock_json_parser);
     }
 
@@ -24,7 +23,7 @@ protected:
 
 TEST_F(JsonGlucoseReadingParserTest, ParseEmptyArray) {
     EXPECT_CALL(*mock_json_parser, parseArray("[]"))
-        .WillOnce(testing::Return(std::vector<std::shared_ptr<IJsonValue>>()));
+        .WillOnce(testing::Return(std::vector<std::shared_ptr<IJsonValue>>{}));
     
     auto readings = parser->parse("[]");
     EXPECT_EQ(0, readings.size());
@@ -32,7 +31,7 @@ TEST_F(JsonGlucoseReadingParserTest, ParseEmptyArray) {
 
 TEST_F(JsonGlucoseReadingParserTest, ParseInvalidJson) {
     EXPECT_CALL(*mock_json_parser, parseArray("invalid"))
-        .WillOnce(testing::Return(std::vector<std::shared_ptr<IJsonValue>>()));
+        .WillOnce(testing::Return(std::vector<std::shared_ptr<IJsonValue>>{}));
     
     auto readings = parser->parse("invalid");
     EXPECT_EQ(0, readings.size());
@@ -40,31 +39,21 @@ TEST_F(JsonGlucoseReadingParserTest, ParseInvalidJson) {
 
 TEST_F(JsonGlucoseReadingParserTest, ParseValidArray) {
     // Create mock JSON values with expected behavior
-    auto mockValue1 = std::make_shared<testing::NiceMock<MockJsonValue>>();
-    auto mockValue2 = std::make_shared<testing::NiceMock<MockJsonValue>>();
-    
-    // Setup expected calls for first mock value
-    EXPECT_CALL(*mockValue1, getInt("Value"))
-        .WillOnce(testing::Return(120));
-    EXPECT_CALL(*mockValue1, getString("Trend"))
-        .WillOnce(testing::Return("Flat"));
-    EXPECT_CALL(*mockValue1, getString("WT"))
-        .WillOnce(testing::Return("Date(1609459200000)"));
-    
-    // Setup expected calls for second mock value
-    EXPECT_CALL(*mockValue2, getInt("Value"))
-        .WillOnce(testing::Return(120));
-    EXPECT_CALL(*mockValue2, getString("Trend"))
-        .WillOnce(testing::Return("Flat"));
-    EXPECT_CALL(*mockValue2, getString("WT"))
-        .WillOnce(testing::Return("Date(1609459200000)"));
-    
-    // Create vector of mock values to return
-    std::vector<std::shared_ptr<IJsonValue>> mockValues = {mockValue1, mockValue2};
+    auto make_valid_mock_value = []() {
+        auto val = std::make_shared<testing::NiceMock<MockJsonValue>>();
+        ON_CALL(*val, getInt("Value")).WillByDefault(testing::Return(120));
+        ON_CALL(*val, getString("Trend")).WillByDefault(testing::Return("Flat"));
+        ON_CALL(*val, getString("WT")).WillByDefault(testing::Return("Date(1609459200000)"));
+        return val;
+    };
+
+    std::vector<std::shared_ptr<IJsonValue>> mock_values;
+    mock_values.push_back(make_valid_mock_value());
+    mock_values.push_back(make_valid_mock_value());
     
     // Setup expectation for parseArray
     EXPECT_CALL(*mock_json_parser, parseArray("[{},{}]"))
-        .WillOnce(testing::Return(mockValues));
+        .WillOnce(testing::Return(mock_values));
     
     auto readings = parser->parse("[{},{}]");
     EXPECT_EQ(2, readings.size());
@@ -87,20 +76,22 @@ TEST_F(JsonGlucoseReadingParserTest, ParseMaxSizeArray) {
     }
     largeArray += "]";
     
+    // Create a function to make mock values
+    auto make_valid_mock_value = []() {
+        auto val = std::make_shared<testing::NiceMock<MockJsonValue>>();
+        ON_CALL(*val, getInt("Value")).WillByDefault(testing::Return(120));
+        ON_CALL(*val, getString("Trend")).WillByDefault(testing::Return("Flat"));
+        ON_CALL(*val, getString("WT")).WillByDefault(testing::Return("Date(1609459200000)"));
+        return val;
+    };
+    
     // Create exactly MAX_MAX_COUNT + 5 mock values to return
     const int totalMockValues = DexcomConst::MAX_MAX_COUNT + 5;
     std::vector<std::shared_ptr<IJsonValue>> mockValues;
     mockValues.reserve(totalMockValues);  // Optimize space allocation
     
     for (int i = 0; i < totalMockValues; i++) {
-        auto mockValue = std::make_shared<testing::NiceMock<MockJsonValue>>();
-        ON_CALL(*mockValue, getInt("Value"))
-            .WillByDefault(testing::Return(120));
-        ON_CALL(*mockValue, getString("Trend"))
-            .WillByDefault(testing::Return("Flat"));
-        ON_CALL(*mockValue, getString("WT"))
-            .WillByDefault(testing::Return("Date(1609459200000)"));
-        mockValues.push_back(mockValue);
+        mockValues.push_back(make_valid_mock_value());
     }
     
     // Verify we actually created the expected number of mock values
