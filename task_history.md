@@ -73,58 +73,6 @@ build_flags = -std=gnu++17
 test_ignore = test_embedded
 ```
 
-## Project Structure and Organization
-
-```
-project-root/
-├── doc/
-│   ├── ComponentsGPIO.md
-│   ├── ProjectGoal.md
-│   ├── SoftwareEng.md
-│   ├── fritzing/
-│   │   └── SugarSentry.fzz
-│   └── schematics/
-│       ├── Adafruit HUZZAH32 ESP32 Feather Pinout.pdf
-│       └── Adafruit HUZZAH32 ESP32 Feather Pinout.png
-├── include/
-│   ├── config.h
-│   └── README
-├── lib/
-│   ├── README
-│   ├── debug_print/
-│   │   └── debug_print.h
-│   ├── dexcom_client/
-│   │   ├── include/
-│   │   │   ├── dexcom_client.h
-│   │   │   ├── dexcom_constants.h
-│   │   │   ├── dexcom_errors.h
-│   │   │   ├── dexcom_utils.h
-│   │   │   └── glucose_reading.h
-│   │   └── src/
-│   │       ├── dexcom_client.cpp
-│   │       ├── dexcom_constants.cpp
-│   │       └── dexcom_utils.cpp
-│   └── i_secure_client/
-│       └── i_secure_client.h
-├── src/
-│   ├── esp32_secure_client.cpp
-│   ├── esp32_secure_client.h
-│   └── main.cpp
-└── test/
-    ├── README
-    ├── test_desktop/
-    │   ├── test_main.cpp
-    │   ├── integration/
-    │   ├── mocks/
-    │   │   ├── mock_secure_client.cpp
-    │   │   └── mock_secure_client.h
-    │   └── unit/
-    │       ├── test_dexcom_client.cpp
-    │       ├── test_dexcom_utils.cpp
-    │       └── test_glucose_reading.cpp
-    └── test_embedded/
-```
-
 ----
 
 The user is professional software engineer who is familiar with Python, Javascript, Scala, Java. However, they are not too familiar with C/C++.
