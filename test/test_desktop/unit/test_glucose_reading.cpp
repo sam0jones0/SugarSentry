@@ -1,37 +1,9 @@
 #include <gtest/gtest.h>
 #include "glucose_reading.h"
 #include "i_json_value.h"
+#include "mock_json_value.h"
 #include <memory>
 #include <stdexcept>
-
-/**
- * Configurable mock JSON value for testing missing fields
- */
-class ConfigurableMockJsonValue : public IJsonValue {
-public:
-    bool hasValueField = true;
-    bool hasTrendField = true;
-    bool hasWTField = true;
-    
-    std::optional<std::string> getString(const std::string& key) const override {
-        if (key == "Trend" && hasTrendField) return "Flat";
-        if (key == "WT" && hasWTField) return "Date(1609459200000)";
-        return std::nullopt;
-    }
-    
-    std::optional<int> getInt(const std::string& key) const override {
-        if (key == "Value" && hasValueField) return 120;
-        return std::nullopt;
-    }
-    
-    std::optional<double> getDouble(const std::string& key) const override {
-        return std::nullopt;
-    }
-    
-    std::optional<bool> getBool(const std::string& key) const override {
-        return std::nullopt;
-    }
-};
 
 class GlucoseReadingTest : public ::testing::Test {
 protected:
@@ -43,11 +15,17 @@ protected:
  * Test Case 1: Valid input (all fields present)
  */
 TEST_F(GlucoseReadingTest, ConstructorWithValidJson) {
-    ConfigurableMockJsonValue jsonValue;
-    // All fields are present by default
+    auto mockJsonValue = std::make_shared<testing::StrictMock<MockJsonValue>>();
+    
+    EXPECT_CALL(*mockJsonValue, getInt("Value"))
+        .WillOnce(testing::Return(120));
+    EXPECT_CALL(*mockJsonValue, getString("Trend"))
+        .WillOnce(testing::Return("Flat"));
+    EXPECT_CALL(*mockJsonValue, getString("WT"))
+        .WillOnce(testing::Return("Date(1609459200000)"));
     
     EXPECT_NO_THROW({
-        GlucoseReading reading(jsonValue);
+        GlucoseReading reading(*mockJsonValue);
         // Verify the reading has expected values
         EXPECT_EQ(120, reading.getValue());
         EXPECT_EQ(DexcomConst::TrendDirection::Flat, reading.getTrend());
@@ -59,11 +37,15 @@ TEST_F(GlucoseReadingTest, ConstructorWithValidJson) {
  * Test Case 2: Value field is missing
  */
 TEST_F(GlucoseReadingTest, ConstructorThrowsWhenValueFieldMissing) {
-    ConfigurableMockJsonValue jsonValue;
-    jsonValue.hasValueField = false;
+    auto mockJsonValue = std::make_shared<testing::StrictMock<MockJsonValue>>();
+    
+    EXPECT_CALL(*mockJsonValue, getInt("Value"))
+        .WillOnce(testing::Return(std::nullopt));
+    
+    // The constructor exits early when Value is missing, so Trend and WT are not checked
     
     EXPECT_THROW({
-        GlucoseReading reading(jsonValue);
+        GlucoseReading reading(*mockJsonValue);
     }, std::runtime_error);
 }
 
@@ -71,11 +53,17 @@ TEST_F(GlucoseReadingTest, ConstructorThrowsWhenValueFieldMissing) {
  * Test Case 3: Trend field is missing
  */
 TEST_F(GlucoseReadingTest, ConstructorThrowsWhenTrendFieldMissing) {
-    ConfigurableMockJsonValue jsonValue;
-    jsonValue.hasTrendField = false;
+    auto mockJsonValue = std::make_shared<testing::StrictMock<MockJsonValue>>();
+    
+    EXPECT_CALL(*mockJsonValue, getInt("Value"))
+        .WillOnce(testing::Return(120));
+    EXPECT_CALL(*mockJsonValue, getString("Trend"))
+        .WillOnce(testing::Return(std::nullopt));
+    
+    // The constructor exits early when Trend is missing, so WT is not checked
     
     EXPECT_THROW({
-        GlucoseReading reading(jsonValue);
+        GlucoseReading reading(*mockJsonValue);
     }, std::runtime_error);
 }
 
@@ -83,10 +71,16 @@ TEST_F(GlucoseReadingTest, ConstructorThrowsWhenTrendFieldMissing) {
  * Test Case 4: WT (timestamp) field is missing
  */
 TEST_F(GlucoseReadingTest, ConstructorThrowsWhenWTFieldMissing) {
-    ConfigurableMockJsonValue jsonValue;
-    jsonValue.hasWTField = false;
+    auto mockJsonValue = std::make_shared<testing::StrictMock<MockJsonValue>>();
+    
+    EXPECT_CALL(*mockJsonValue, getInt("Value"))
+        .WillOnce(testing::Return(120));
+    EXPECT_CALL(*mockJsonValue, getString("Trend"))
+        .WillOnce(testing::Return("Flat"));
+    EXPECT_CALL(*mockJsonValue, getString("WT"))
+        .WillOnce(testing::Return(std::nullopt));
     
     EXPECT_THROW({
-        GlucoseReading reading(jsonValue);
+        GlucoseReading reading(*mockJsonValue);
     }, std::runtime_error);
 }

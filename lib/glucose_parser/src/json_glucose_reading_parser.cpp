@@ -20,6 +20,11 @@ std::vector<GlucoseReading> JsonGlucoseReadingParser::parse(const std::string &r
     }
 
     for (const auto& jsonValue : jsonArray) {
+        // Stop processing if we've reached the maximum number of readings
+        if (readings.size() >= DexcomConst::MAX_MAX_COUNT) {
+            break;
+        }
+        
         if (!jsonValue) continue;
         
         try {
