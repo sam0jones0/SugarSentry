@@ -1,86 +1,198 @@
-Task 1 
+```
+Task 12
 
-Understand the background of the project
+Refactored mocking for the `IJsonParser` interface to use a standardized GMock implementation:
 
-"""
-Project Goal: Develop a portable device that displays blood sugar levels from a Dexcom API, shows historical data in a graph, and monitors room temperature, humidity, and proximity. The device uses an e-ink display for low power consumption and long battery life.
+- Created a clean GMock implementation for the `IJsonParser` interface focusing only on the mocked methods
+- Removed helper methods and hardcoded default behaviors from the mock class
+- Used `MOCK_METHOD` macros for both `parseObject` and `parseArray` methods
+- Updated test fixture to use `testing::NiceMock<MockJsonParser>` for proper behavior
+- Refactored test cases to set up expectations explicitly instead of relying on default behaviors
+- Created a reusable factory function for mock values to improve test code readability
+- Ensured all tests pass with the standardized GMock implementation
 
-Main Development Board:
-- Adafruit HUZZAH32 – ESP32 Feather Board
+This standardized approach improves maintainability by centralizing the mock implementation in a single location, ensuring consistency across all tests that use the IJsonParser interface, and making the test code easier to understand and maintain.
 
-Components:
-- 7.5-inch (800x480) E-Paper Display
-- BME280 temperature/humidity sensor
-- VCNL4040 proximity and ambient light sensor
-- LiPo battery (for portability)
+----
 
-GPIO/Integration Requirements:
-- SPI interface for E-Paper Display (6-8 pins)
-- I2C for BME280 and VCNL4040 sensors (2 pins, shared)
-- 1 additional pin for VCNL4040 interrupt
-- 1-2 pins for user input buttons
-- 1 pin for status LED
+Task 11
 
-Board Specifications (Adafruit HUZZAH32):
-- ESP32 dual-core processor
-- 4MB Flash
-- 520KB SRAM
-- Wi-Fi and Bluetooth connectivity
-- Built-in LiPo battery charging
-- USB connectivity for programming and debugging
-- Breadboard-friendly form factor
+Refactor mocking for the `IJsonParser` interface to use a standardized GMock implementation.
 
-Power Management:
-- Utilizes ESP32's low power modes for extended battery life
-- Built-in LiPo charging capability
+----
 
-Connectivity:
-- Wi-Fi for API calls to Dexcom
-- Bluetooth available for potential future expansions
+Task 10
 
-Development Environment:
-- Compatible with Arduino IDE and PlatformIO
+Refactored the mocking for the ISecureClient interface to use a single, standardized GMock implementation:
 
-Additional Advantages:
-- Compact form factor suitable for portable device design
-- Good community support and available libraries
-- Cost-effective for prototype development
+- Created a standardized `MockSecureClient` class in the `test/test_desktop/mocks` directory
+- Used proper GMock `MOCK_METHOD` macros for all virtual methods from the interface
+- Removed the redundant `MockSecureClientImpl` class from the test file
+- Updated all references in the test code to use the new mock
+- All tests are passing successfully with the refactored code
 
+This standardized approach improves maintainability by centralizing the mock implementation in a single location, ensuring consistency across all tests that use the ISecureClient interface and making the test code easier to understand and maintain.
 
-## Development Setup
+----
 
-platformIO in vscode on Windows 10
+Task 9
 
-Written in C++
+Enhanced the SecureHttpClient test suite with comprehensive error handling tests:
 
-```ini
-[env:featheresp32]
-platform = espressif32
-board = esp32dev
-framework = arduino
-build_unflags = -std=gnu++11
-build_flags = -std=gnu++17
-monitor_speed = 115200
-upload_speed = 921600
-lib_deps = 
-    bblanchon/ArduinoJson @ ^6.18.5
-test_ignore = test_desktop
+- Added test cases for connection failures to verify proper error reporting
+- Implemented tests for non-200 HTTP status responses (404 and 500)
+- Created test cases for edge cases like empty response bodies and malformed status lines
+- Used GMock expectations and ON_CALL patterns for robust mocking of complex behaviors
+- Fixed issues with test expectations to handle implementation quirks
 
-[env:native]
-platform = native
-build_unflags = -std=gnu++11
-build_flags = -std=gnu++17
-test_ignore = test_embedded
+The enhanced test coverage ensures that SecureHttpClient correctly handles error conditions and edge cases, making the system more robust against network issues and unexpected server responses.
+
+----
+
+Task 8
+
+Created a new test suite for the SecureHttpClient class to validate its HTTP functionality:
+
+- Created test_secure_http_client.cpp with a dedicated test fixture
+- Implemented tests for constructor behavior (timeout setting)
+- Added tests for connection management (connect, disconnect, isConnected)
+- Created comprehensive tests for successful GET and POST requests
+- Used GMock for properly mocking ISecureClient behavior
+- Fixed various test issues related to GMock expectations
+- All tests are now passing successfully
+
+The test suite ensures that SecureHttpClient correctly implements the IHttpClient interface and properly uses ISecureClient for low-level socket operations. The tests validate both the constructor behavior and all key operations, including request formatting and response parsing.
+
+----
+
+Task 7
+
+Enhanced the GlucoseReading class tests to improve error handling robustness.
+
+Created a new test file (test_glucose_reading.cpp) with comprehensive tests for the GlucoseReading(const IJsonValue& json) constructor:
+- Implemented a configurable mock JSON value for testing missing fields
+- Added test cases for all required fields (Value, Trend, WT)
+- Verified the constructor properly throws std::runtime_error when fields are missing
+- All tests are passing successfully
+
+This ensures the GlucoseReading class correctly validates JSON input and provides clear error messages when essential fields are missing, improving the robustness of the application against malformed data.
+
+----
+
+Task 6
+
+```
+migrated the test framework from Unity to GoogleTest and fixed all related issues:
 ```
 
 ----
 
-The user is professional software engineer who is familiar with Python, Javascript, Scala, Java. However, they are not too familiar with C/C++.
+Task 5
 
-The user is rewriting a Python library into C++ for use within the embedded project. All questions will pertain to that goal. The user may copy Python code in and ask for it to be translated into C++.
+```
+Separate Parsing Logic from Network Logic
 
-Memory/CPU contraints are a concern and code should be optimised for this purpose.
-"""
+Task:
+
+    Create a Separate Parser Class:
+        Define an interface IGlucoseReadingParser with a method like parse(const std::string& response).
+        Implement this interface in a class GlucoseReadingParser that handles parsing JSON strings into GlucoseReading objects.
+    Refactor DexcomClient:
+        Remove the JSON parsing code from DexcomClient.
+        Inject an instance of IGlucoseReadingParser into DexcomClient via constructor or setter injection.
+        DexcomClient will use this parser to convert raw JSON responses into domain objects.
+    Benefits:
+        Single Responsibility: DexcomClient focuses solely on network communication.
+        Separation of Concerns: Parsing logic is encapsulated within its own class.
+        Testability: You can test parsing logic independently from networking logic.
+        Maintainability: Changes to parsing (e.g., handling new JSON formats) won't affect networking code.
+
+I.e.
+
+DexcomClient
+   |
+   +-- uses --> IHttpClient (for network communication)
+   |
+   +-- uses --> IGlucoseReadingParser (for parsing readings)
+                        |
+                        +-- uses --> IJsonParser (for JSON parsing)
+
+
+Successfully separated parsing logic from network logic by implementing a clean layered architecture:
+
+Interface Layer:
+
+IJsonValue/IJsonParser: Generic JSON operations
+IGlucoseReadingParser: Domain-specific parsing
+IHttpClient: Network operations
+Implementation Layer:
+
+ArduinoJsonParser: Implements IJsonParser using ArduinoJson
+JsonGlucoseReadingParser: Implements IGlucoseReadingParser using IJsonParser
+GlucoseReading: Domain model using IJsonValue
+Benefits:
+
+Clear separation of concerns
+Improved testability through interfaces
+Flexible architecture allowing different implementations
+No direct ArduinoJson dependencies in business logic
+The implementation follows the target architecture diagram exactly, with DexcomClient using IHttpClient for network operations and IGlucoseReadingParser for parsing, which in turn uses IJsonParser for low-level JSON operations.
+```
+
+----
+
+Task 4
+
+```
+Abstract JSON Parsing Logic
+
+Currently, the DexcomClient class directly uses ArduinoJson for JSON parsing within its methods like parseGlucoseReadings() and handleResponse(). This tight coupling makes unit testing difficult and ties the class to a specific JSON library.
+
+Task: Create an interface IJsonParser with methods needed for JSON parsing (e.g., parseObject, parseArray). Implement this interface with a class ArduinoJsonParser that uses ArduinoJson. Inject IJsonParser into DexcomClient via dependency injection. This allows you to mock the parser in tests and replace the JSON library if needed in the future.
+
+All tests are now passing. Let's summarize what we did to fix the issues:
+
+Changed the error handling approach from std::optional<DexcomError> to std::unique_ptr<DexcomError> to properly handle polymorphic types and prevent object slicing.
+Added the <memory> header to both interface files since we're using std::unique_ptr.
+Updated the test cases to work with unique_ptr instead of optional.
+The changes we made ensure that:
+
+Error objects maintain their derived type information through polymorphism
+Memory is managed properly using smart pointers
+The interface is cleaner and more type-safe
+```
+
+----
+
+Task 3
+
+```
+The refactoring is now complete. We have successfully:
+
+Separated all concerns into distinct layers:
+
+ISecureClient for low-level socket operations
+SecureHttpClient for HTTP protocol handling
+IHttpClient for high-level HTTP interface
+DexcomClient for business logic
+Removed all HTTP handling code from DexcomClient:
+
+No more direct socket operations
+No more raw HTTP request/response formatting
+Using clean HttpRequest/HttpResponse abstractions
+Improved testability:
+
+Created MockHttpClient for testing
+Updated tests to use new abstractions
+Added comprehensive test coverage
+Proper exception testing
+Implemented proper dependency injection:
+
+DexcomClient now accepts IHttpClient
+SecureHttpClient accepts ISecureClient
+All dependencies are passed through constructors
+The code is now more maintainable, testable, and follows SOLID principles with clear separation of concerns.
+```
 
 ----
 
@@ -182,199 +294,87 @@ public:
 
 ----
 
-Task 3
+Task 1 
 
-```
-The refactoring is now complete. We have successfully:
+Understand the background of the project
 
-Separated all concerns into distinct layers:
+"""
+Project Goal: Develop a portable device that displays blood sugar levels from a Dexcom API, shows historical data in a graph, and monitors room temperature, humidity, and proximity. The device uses an e-ink display for low power consumption and long battery life.
 
-ISecureClient for low-level socket operations
-SecureHttpClient for HTTP protocol handling
-IHttpClient for high-level HTTP interface
-DexcomClient for business logic
-Removed all HTTP handling code from DexcomClient:
+Main Development Board:
+- Adafruit HUZZAH32 – ESP32 Feather Board
 
-No more direct socket operations
-No more raw HTTP request/response formatting
-Using clean HttpRequest/HttpResponse abstractions
-Improved testability:
+Components:
+- 7.5-inch (800x480) E-Paper Display
+- BME280 temperature/humidity sensor
+- VCNL4040 proximity and ambient light sensor
+- LiPo battery (for portability)
 
-Created MockHttpClient for testing
-Updated tests to use new abstractions
-Added comprehensive test coverage
-Proper exception testing
-Implemented proper dependency injection:
+GPIO/Integration Requirements:
+- SPI interface for E-Paper Display (6-8 pins)
+- I2C for BME280 and VCNL4040 sensors (2 pins, shared)
+- 1 additional pin for VCNL4040 interrupt
+- 1-2 pins for user input buttons
+- 1 pin for status LED
 
-DexcomClient now accepts IHttpClient
-SecureHttpClient accepts ISecureClient
-All dependencies are passed through constructors
-The code is now more maintainable, testable, and follows SOLID principles with clear separation of concerns.
-```
+Board Specifications (Adafruit HUZZAH32):
+- ESP32 dual-core processor
+- 4MB Flash
+- 520KB SRAM
+- Wi-Fi and Bluetooth connectivity
+- Built-in LiPo battery charging
+- USB connectivity for programming and debugging
+- Breadboard-friendly form factor
 
-----
+Power Management:
+- Utilizes ESP32's low power modes for extended battery life
+- Built-in LiPo charging capability
 
-Task 4
+Connectivity:
+- Wi-Fi for API calls to Dexcom
+- Bluetooth available for potential future expansions
 
-```
-Abstract JSON Parsing Logic
+Development Environment:
+- Compatible with Arduino IDE and PlatformIO
 
-Currently, the DexcomClient class directly uses ArduinoJson for JSON parsing within its methods like parseGlucoseReadings() and handleResponse(). This tight coupling makes unit testing difficult and ties the class to a specific JSON library.
-
-Task: Create an interface IJsonParser with methods needed for JSON parsing (e.g., parseObject, parseArray). Implement this interface with a class ArduinoJsonParser that uses ArduinoJson. Inject IJsonParser into DexcomClient via dependency injection. This allows you to mock the parser in tests and replace the JSON library if needed in the future.
-
-All tests are now passing. Let's summarize what we did to fix the issues:
-
-Changed the error handling approach from std::optional<DexcomError> to std::unique_ptr<DexcomError> to properly handle polymorphic types and prevent object slicing.
-Added the <memory> header to both interface files since we're using std::unique_ptr.
-Updated the test cases to work with unique_ptr instead of optional.
-The changes we made ensure that:
-
-Error objects maintain their derived type information through polymorphism
-Memory is managed properly using smart pointers
-The interface is cleaner and more type-safe
-```
-
-----
-
-Task 5
-
-```
-Separate Parsing Logic from Network Logic
-
-Task:
-
-    Create a Separate Parser Class:
-        Define an interface IGlucoseReadingParser with a method like parse(const std::string& response).
-        Implement this interface in a class GlucoseReadingParser that handles parsing JSON strings into GlucoseReading objects.
-    Refactor DexcomClient:
-        Remove the JSON parsing code from DexcomClient.
-        Inject an instance of IGlucoseReadingParser into DexcomClient via constructor or setter injection.
-        DexcomClient will use this parser to convert raw JSON responses into domain objects.
-    Benefits:
-        Single Responsibility: DexcomClient focuses solely on network communication.
-        Separation of Concerns: Parsing logic is encapsulated within its own class.
-        Testability: You can test parsing logic independently from networking logic.
-        Maintainability: Changes to parsing (e.g., handling new JSON formats) won't affect networking code.
-
-I.e.
-
-DexcomClient
-   |
-   +-- uses --> IHttpClient (for network communication)
-   |
-   +-- uses --> IGlucoseReadingParser (for parsing readings)
-                        |
-                        +-- uses --> IJsonParser (for JSON parsing)
+Additional Advantages:
+- Compact form factor suitable for portable device design
+- Good community support and available libraries
+- Cost-effective for prototype development
 
 
-Successfully separated parsing logic from network logic by implementing a clean layered architecture:
+## Development Setup
 
-Interface Layer:
+platformIO in vscode on Windows 10
 
-IJsonValue/IJsonParser: Generic JSON operations
-IGlucoseReadingParser: Domain-specific parsing
-IHttpClient: Network operations
-Implementation Layer:
+Written in C++
 
-ArduinoJsonParser: Implements IJsonParser using ArduinoJson
-JsonGlucoseReadingParser: Implements IGlucoseReadingParser using IJsonParser
-GlucoseReading: Domain model using IJsonValue
-Benefits:
+```ini
+[env:featheresp32]
+platform = espressif32
+board = esp32dev
+framework = arduino
+build_unflags = -std=gnu++11
+build_flags = -std=gnu++17
+monitor_speed = 115200
+upload_speed = 921600
+lib_deps = 
+    bblanchon/ArduinoJson @ ^6.18.5
+test_ignore = test_desktop
 
-Clear separation of concerns
-Improved testability through interfaces
-Flexible architecture allowing different implementations
-No direct ArduinoJson dependencies in business logic
-The implementation follows the target architecture diagram exactly, with DexcomClient using IHttpClient for network operations and IGlucoseReadingParser for parsing, which in turn uses IJsonParser for low-level JSON operations.
+[env:native]
+platform = native
+build_unflags = -std=gnu++11
+build_flags = -std=gnu++17
+test_ignore = test_embedded
 ```
 
 ----
 
-Task 6
+The user is professional software engineer who is familiar with Python, Javascript, Scala, Java. However, they are not too familiar with C/C++.
 
+The user is rewriting a Python library into C++ for use within the embedded project. All questions will pertain to that goal. The user may copy Python code in and ask for it to be translated into C++.
+
+Memory/CPU contraints are a concern and code should be optimised for this purpose.
+"""
 ```
-migrated the test framework from Unity to GoogleTest and fixed all related issues:
-```
-
-----
-
-Task 7
-
-Enhanced the GlucoseReading class tests to improve error handling robustness.
-
-Created a new test file (test_glucose_reading.cpp) with comprehensive tests for the GlucoseReading(const IJsonValue& json) constructor:
-- Implemented a configurable mock JSON value for testing missing fields
-- Added test cases for all required fields (Value, Trend, WT)
-- Verified the constructor properly throws std::runtime_error when fields are missing
-- All tests are passing successfully
-
-This ensures the GlucoseReading class correctly validates JSON input and provides clear error messages when essential fields are missing, improving the robustness of the application against malformed data.
-
-----
-
-Task 8
-
-Created a new test suite for the SecureHttpClient class to validate its HTTP functionality:
-
-- Created test_secure_http_client.cpp with a dedicated test fixture
-- Implemented tests for constructor behavior (timeout setting)
-- Added tests for connection management (connect, disconnect, isConnected)
-- Created comprehensive tests for successful GET and POST requests
-- Used GMock for properly mocking ISecureClient behavior
-- Fixed various test issues related to GMock expectations
-- All tests are now passing successfully
-
-The test suite ensures that SecureHttpClient correctly implements the IHttpClient interface and properly uses ISecureClient for low-level socket operations. The tests validate both the constructor behavior and all key operations, including request formatting and response parsing.
-
-----
-
-Task 9
-
-Enhanced the SecureHttpClient test suite with comprehensive error handling tests:
-
-- Added test cases for connection failures to verify proper error reporting
-- Implemented tests for non-200 HTTP status responses (404 and 500)
-- Created test cases for edge cases like empty response bodies and malformed status lines
-- Used GMock expectations and ON_CALL patterns for robust mocking of complex behaviors
-- Fixed issues with test expectations to handle implementation quirks
-
-The enhanced test coverage ensures that SecureHttpClient correctly handles error conditions and edge cases, making the system more robust against network issues and unexpected server responses.
-
-----
-
-Task 10
-
-Refactored the mocking for the ISecureClient interface to use a single, standardized GMock implementation:
-
-- Created a standardized `MockSecureClient` class in the `test/test_desktop/mocks` directory
-- Used proper GMock `MOCK_METHOD` macros for all virtual methods from the interface
-- Removed the redundant `MockSecureClientImpl` class from the test file
-- Updated all references in the test code to use the new mock
-- All tests are passing successfully with the refactored code
-
-This standardized approach improves maintainability by centralizing the mock implementation in a single location, ensuring consistency across all tests that use the ISecureClient interface and making the test code easier to understand and maintain.
-
-----
-
-Task 11
-
-Refactor mocking for the `IJsonParser` interface to use a standardized GMock implementation.
-
-----
-
-Task 12
-
-Refactored mocking for the `IJsonParser` interface to use a standardized GMock implementation:
-
-- Created a clean GMock implementation for the `IJsonParser` interface focusing only on the mocked methods
-- Removed helper methods and hardcoded default behaviors from the mock class
-- Used `MOCK_METHOD` macros for both `parseObject` and `parseArray` methods
-- Updated test fixture to use `testing::NiceMock<MockJsonParser>` for proper behavior
-- Refactored test cases to set up expectations explicitly instead of relying on default behaviors
-- Created a reusable factory function for mock values to improve test code readability
-- Ensured all tests pass with the standardized GMock implementation
-
-This standardized approach improves maintainability by centralizing the mock implementation in a single location, ensuring consistency across all tests that use the IJsonParser interface, and making the test code easier to understand and maintain.
-
-----
