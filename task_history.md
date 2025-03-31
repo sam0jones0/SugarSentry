@@ -310,3 +310,19 @@ Created a new test file (test_glucose_reading.cpp) with comprehensive tests for 
 - All tests are passing successfully
 
 This ensures the GlucoseReading class correctly validates JSON input and provides clear error messages when essential fields are missing, improving the robustness of the application against malformed data.
+
+----
+
+Task 8
+
+Created a new test suite for the SecureHttpClient class to validate its HTTP functionality:
+
+- Created test_secure_http_client.cpp with a dedicated test fixture
+- Implemented tests for constructor behavior (timeout setting)
+- Added tests for connection management (connect, disconnect, isConnected)
+- Created comprehensive tests for successful GET and POST requests
+- Used GMock for properly mocking ISecureClient behavior
+- Fixed various test issues related to GMock expectations
+- All tests are now passing successfully
+
+The test suite ensures that SecureHttpClient correctly implements the IHttpClient interface and properly uses ISecureClient for low-level socket operations. The tests validate both the constructor behavior and all key operations, including request formatting and response parsing.
