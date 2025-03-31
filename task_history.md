@@ -298,3 +298,15 @@ migrated the test framework from Unity to GoogleTest and fixed all related issue
 ```
 
 ----
+
+Task 7
+
+Enhanced the GlucoseReading class tests to improve error handling robustness.
+
+Created a new test file (test_glucose_reading.cpp) with comprehensive tests for the GlucoseReading(const IJsonValue& json) constructor:
+- Implemented a configurable mock JSON value for testing missing fields
+- Added test cases for all required fields (Value, Trend, WT)
+- Verified the constructor properly throws std::runtime_error when fields are missing
+- All tests are passing successfully
+
+This ensures the GlucoseReading class correctly validates JSON input and provides clear error messages when essential fields are missing, improving the robustness of the application against malformed data.
