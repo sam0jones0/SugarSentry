@@ -1,34 +1,17 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "secure_http_client.h"
-#include "mock_secure_client.h"
+#include "../mocks/mock_secure_client.h"
 #include <memory>
 #include <string>
 #include <sstream>
-
-// Extend MockSecureClient with GMock methods for testing
-// Use testing::NiceMock instead of StrictMock to allow uninteresting calls
-class MockSecureClientImpl : public MockSecureClient
-{
-public:
-    MOCK_METHOD(bool, connect, (const char* host, uint16_t port), (override));
-    MOCK_METHOD(void, stop, (), (override));
-    MOCK_METHOD(bool, connected, (), (override));
-    MOCK_METHOD(void, setTimeout, (uint32_t timeout), (override));
-    MOCK_METHOD(void, println, (const std::string& data), (override));
-    MOCK_METHOD(void, println, (), (override));
-    MOCK_METHOD(std::string, readStringUntil, (char terminator), (override));
-    MOCK_METHOD(int, available, (), (override));
-    MOCK_METHOD(int, read, (), (override));
-    MOCK_METHOD(int, read, (uint8_t* buf, size_t size), (override));
-};
 
 class SecureHttpClientTest : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
-        mock_secure_client_ = std::make_shared<testing::NiceMock<MockSecureClientImpl>>();
+        mock_secure_client_ = std::make_shared<testing::NiceMock<MockSecureClient>>();
         
         // Set default behaviors to avoid unexpected failures
         ON_CALL(*mock_secure_client_, setTimeout).WillByDefault(testing::Return());
@@ -43,14 +26,14 @@ protected:
         mock_secure_client_.reset();
     }
 
-    std::shared_ptr<testing::NiceMock<MockSecureClientImpl>> mock_secure_client_;
+    std::shared_ptr<testing::NiceMock<MockSecureClient>> mock_secure_client_;
     std::unique_ptr<SecureHttpClient> http_client_;
 };
 
 TEST_F(SecureHttpClientTest, Constructor_SetsTimeout)
 {
     // We need to create a new mock since the one in SetUp already had setTimeout called
-    auto new_mock = std::make_shared<testing::NiceMock<MockSecureClientImpl>>();
+    auto new_mock = std::make_shared<testing::NiceMock<MockSecureClient>>();
     
     // Test that the constructor sets the timeout on the secure client
     EXPECT_CALL(*new_mock, setTimeout(5000)).Times(1);
@@ -81,7 +64,7 @@ TEST_F(SecureHttpClientTest, Disconnect_CallsStop)
     // and in the SecureHttpClient destructor, so we need to account for that.
     
     // Create a fresh mock client for this test
-    auto test_mock = std::make_shared<testing::NiceMock<MockSecureClientImpl>>();
+    auto test_mock = std::make_shared<testing::NiceMock<MockSecureClient>>();
     
     // Setup: First connection check returns true, second returns false
     {
@@ -106,7 +89,7 @@ TEST_F(SecureHttpClientTest, Disconnect_CallsStop)
 TEST_F(SecureHttpClientTest, IsConnected_ReturnsTrue)
 {
     // Create a fresh mock client for this test
-    auto test_mock = std::make_shared<testing::NiceMock<MockSecureClientImpl>>();
+    auto test_mock = std::make_shared<testing::NiceMock<MockSecureClient>>();
     auto test_client = std::make_unique<SecureHttpClient>(test_mock);
     
     // Use ON_CALL instead of EXPECT_CALL to avoid "called more than expected" errors
@@ -119,7 +102,7 @@ TEST_F(SecureHttpClientTest, IsConnected_ReturnsTrue)
 TEST_F(SecureHttpClientTest, IsConnected_ReturnsFalse)
 {
     // Create a fresh mock client for this test
-    auto test_mock = std::make_shared<testing::NiceMock<MockSecureClientImpl>>();
+    auto test_mock = std::make_shared<testing::NiceMock<MockSecureClient>>();
     auto test_client = std::make_unique<SecureHttpClient>(test_mock);
     
     // Use ON_CALL instead of EXPECT_CALL to avoid "called more than expected" errors

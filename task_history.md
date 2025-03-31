@@ -340,3 +340,17 @@ Enhanced the SecureHttpClient test suite with comprehensive error handling tests
 - Fixed issues with test expectations to handle implementation quirks
 
 The enhanced test coverage ensures that SecureHttpClient correctly handles error conditions and edge cases, making the system more robust against network issues and unexpected server responses.
+
+----
+
+Task 10
+
+Refactored the mocking for the ISecureClient interface to use a single, standardized GMock implementation:
+
+- Created a standardized `MockSecureClient` class in the `test/test_desktop/mocks` directory
+- Used proper GMock `MOCK_METHOD` macros for all virtual methods from the interface
+- Removed the redundant `MockSecureClientImpl` class from the test file
+- Updated all references in the test code to use the new mock
+- All tests are passing successfully with the refactored code
+
+This standardized approach improves maintainability by centralizing the mock implementation in a single location, ensuring consistency across all tests that use the ISecureClient interface and making the test code easier to understand and maintain.
