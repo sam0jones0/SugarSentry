@@ -1,3 +1,17 @@
+Task 14
+
+Created a standardized GMock implementation for the `IGlucoseReadingParser` interface:
+
+- Implemented a clean GMock class using MOCK_METHOD macro for the parse method
+- Removed the previous hard-coded mock implementation
+- Included all necessary header files
+- Ensured exact signature matching for the parse method
+- Verified all tests pass with the standardized implementation
+
+This continues the standardization effort across the codebase, making mocks more maintainable and consistent with the project's testing patterns.
+
+----
+
 Task 13
 
 Created a standardized GMock implementation for the `IHttpClient` interface:
@@ -391,4 +405,3 @@ The user is rewriting a Python library into C++ for use within the embedded proj
 
 Memory/CPU contraints are a concern and code should be optimised for this purpose.
 """
-```
