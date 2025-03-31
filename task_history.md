@@ -1,3 +1,17 @@
+Task 13
+
+Created a standardized GMock implementation for the `IHttpClient` interface:
+
+- Implemented a clean GMock implementation using MOCK_METHOD macros for all virtual methods
+- Properly handled complex template parameters with parenthesization for methods with std::map arguments
+- Ensured exact signature matching including the const qualifier for isConnected method
+- Removed all hardcoded default behaviors from the previous mock implementation
+- Verified all tests pass with the standardized GMock implementation
+
+This continues the standardization effort across the codebase, making mocks more maintainable and consistent with the project's testing patterns.
+
+----
+
 ```
 Task 12
 
