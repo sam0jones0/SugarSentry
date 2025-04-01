@@ -29,8 +29,6 @@ SugarSentry aims to be a stylish, bedside/desktop device that displays blood sug
 
 ## Hardware
 
-*(Hardware components required for the full feature set)*
-
 - Adafruit HUZZAH32 – ESP32 Feather Board
 - 7.5-inch (800x480) E-Paper Display
 - BME280 temperature/humidity sensor
@@ -43,7 +41,7 @@ SugarSentry aims to be a stylish, bedside/desktop device that displays blood sug
 - Written in C++
 - Compatible with Arduino IDE and PlatformIO
 - Core networking and API logic established
-- Focus on modularity, testability, power efficiency, and memory optimization
+- Focus on modularity, testability, power efficiency, and memory optimisation
 
 ## License
 
