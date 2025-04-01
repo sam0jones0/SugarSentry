@@ -1,3 +1,18 @@
+Task 15
+
+Created GoogleTest fixture for DexcomClient tests with proper mocking setup:
+
+- Created test_dexcom_client.cpp with all necessary headers and test infrastructure
+- Set up NiceMock instances of MockHttpClient and MockGlucoseReadingParser
+- Defined dummy test credentials and Dexcom URLs as constants
+- Implemented proper SetUp/TearDown methods with default behavior for common calls
+- Added a placeholder test to verify the fixture setup is correct
+- All tests pass successfully
+
+This fixture provides a clean foundation for future DexcomClient tests, continuing the project's standardized testing approach.
+
+----
+
 Task 14
 
 Created a standardized GMock implementation for the `IGlucoseReadingParser` interface:
