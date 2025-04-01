@@ -1,3 +1,9 @@
+Task 21
+
+Refactor `DexcomClient::post` to remove its internal retry logic
+
+----
+
 Task 20
 
 Refactor `ESP32SecureClient::connect` to remove internal retry logic

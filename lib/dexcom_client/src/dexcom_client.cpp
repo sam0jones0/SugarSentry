@@ -161,6 +161,15 @@ std::string DexcomClient::getSessionId()
 
 std::string DexcomClient::post(const std::string &endpoint, const std::string &params, const std::string &json)
 {
+    // Check if connected first
+    if (!_httpClient->isConnected()) {
+        // Try to connect
+        if (!_httpClient->connect(_base_url, 443)) {
+            DEBUG_PRINT("Connection failed");
+            throw SessionError(DexcomErrors::SessionError::INVALID);
+        }
+    }
+
     // Construct the URL
     std::string url = "/ShareWebServices/Services/" + endpoint;
     if (!params.empty()) {
@@ -186,23 +195,26 @@ std::string DexcomClient::post(const std::string &endpoint, const std::string &p
             DEBUG_PRINTF("Response: %s\n", response.body.c_str());
             return response.body;
         } 
-        // Throw appropriate exception for client errors
+        // Throw appropriate exception for error status codes
         else if (response.statusCode == 401) {
             throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
         } 
-        // Return a generic error string for other status codes
+        else if (response.statusCode == 500) {
+            throw SessionError(DexcomErrors::SessionError::INVALID);
+        }
+        // For any other non-200 status code, throw a generic SessionError
         else {
-            return "HTTP Error: " + std::to_string(response.statusCode);
+            throw SessionError(DexcomErrors::SessionError::INVALID);
         }
     } 
     // Re-throw DexcomError exceptions
     catch (const DexcomError& e) {
         throw;
     } 
-    // For other exceptions, return a generic error message
+    // For other exceptions, throw a SessionError
     catch (const std::exception& e) {
         DEBUG_PRINTF("Request failed: %s\n", e.what());
-        return "Connection Error";
+        throw SessionError(DexcomErrors::SessionError::INVALID);
     }
 }
 
