@@ -130,11 +130,6 @@ std::string DexcomClient::getAccountId()
     std::string json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
 
-    if (response.substr(0, 11) == "HTTP Error:" || response == "Connection Error")
-    {
-        throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
-    }
-
     response.erase(std::remove_if(response.begin(), response.end(), [](char c)
                                   { return std::isspace(c) || c == '\"'; }),
                    response.end());
@@ -146,11 +141,6 @@ std::string DexcomClient::getSessionId()
 {
     std::string json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
-
-    if (response.substr(0, 11) == "HTTP Error:" || response == "Connection Error")
-    {
-        throw SessionError(DexcomErrors::SessionError::INVALID);
-    }
 
     response.erase(std::remove_if(response.begin(), response.end(), [](char c)
                                   { return std::isspace(c) || c == '\"'; }),
@@ -231,11 +221,6 @@ std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_c
 
     std::string params = "sessionId=" + _session_id + "&minutes=" + std::to_string(minutes) + "&maxCount=" + std::to_string(max_count);
     std::string response = post(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT, params);
-
-    if (response.substr(0, 11) == "HTTP Error:" || response == "Connection Error")
-    {
-        throw SessionError(DexcomErrors::SessionError::INVALID);
-    }
 
     return response;
 }

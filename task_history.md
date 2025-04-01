@@ -1,3 +1,9 @@
+Task 26
+
+refactor(DexcomClient): Remove redundant error string checks that duplicated handling already performed in post method
+
+---
+
 Task 25
 
 Created test_dexcom_utils.cpp with 4 test cases for stringToTrendDirection. Fixed nullptr handling in the original function to prevent crashes.
