@@ -1,3 +1,9 @@
+Task 16
+
+Successfully implemented all three test cases for the DexcomClient constructor to verify proper behavior during successful construction.
+
+----
+
 Task 15
 
 Created GoogleTest fixture for DexcomClient tests with proper mocking setup:

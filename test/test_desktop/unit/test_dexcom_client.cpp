@@ -48,3 +48,83 @@ protected:
 TEST_F(DexcomClientTest, FixtureSetup) {
     // This test doesn't do anything, it just ensures the fixture compiles
 }
+
+TEST_F(DexcomClientTest, SuccessfulConstructionOUSFalse) {
+    // Define expected responses
+    const std::string dummy_account_id = ACCOUNT_ID;
+    const std::string dummy_session_id = SESSION_ID;
+    
+    // Use InSequence to enforce order of calls
+    testing::InSequence seq;
+    
+    // Set expectations on mock_http_client_
+    EXPECT_CALL(*mock_http_client_, connect(DexcomConst::DEXCOM_BASE_URL, 443))
+        .Times(1)
+        .WillOnce(testing::Return(true));
+    
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, "\"" + std::string(ACCOUNT_ID) + "\"", {}}));
+    
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, "\"" + std::string(SESSION_ID) + "\"", {}}));
+    
+    // Instantiate client with username but no account_id (will trigger getAccountId)
+    EXPECT_NO_THROW({
+        dexcom_client_ = std::make_unique<DexcomClient>(mock_http_client_, mock_glucose_parser_, 
+                                                       USERNAME, "", PASSWORD, false);
+    });
+}
+
+TEST_F(DexcomClientTest, SuccessfulConstructionOUSFalseWithAccountID) {
+    // Define expected responses
+    const std::string dummy_session_id = SESSION_ID;
+    
+    // Use InSequence to enforce order of calls
+    testing::InSequence seq;
+    
+    // Set expectations on mock_http_client_
+    EXPECT_CALL(*mock_http_client_, connect(DexcomConst::DEXCOM_BASE_URL, 443))
+        .Times(1)
+        .WillOnce(testing::Return(true));
+    
+    // Only getSessionId should be called when account_id is provided
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, "\"" + std::string(SESSION_ID) + "\"", {}}));
+    
+    // Instantiate client with account_id but no username
+    EXPECT_NO_THROW({
+        dexcom_client_ = std::make_unique<DexcomClient>(mock_http_client_, mock_glucose_parser_, 
+                                                       "", ACCOUNT_ID, PASSWORD, false);
+    });
+}
+
+TEST_F(DexcomClientTest, SuccessfulConstructionOUSTrue) {
+    // Define expected responses
+    const std::string dummy_account_id = ACCOUNT_ID;
+    const std::string dummy_session_id = SESSION_ID;
+    
+    // Use InSequence to enforce order of calls
+    testing::InSequence seq;
+    
+    // Set expectations on mock_http_client_ - verify OUS URL is used
+    EXPECT_CALL(*mock_http_client_, connect(DexcomConst::DEXCOM_BASE_URL_OUS, 443))
+        .Times(1)
+        .WillOnce(testing::Return(true));
+    
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, "\"" + std::string(ACCOUNT_ID) + "\"", {}}));
+    
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, "\"" + std::string(SESSION_ID) + "\"", {}}));
+    
+    // Instantiate client with ous = true
+    EXPECT_NO_THROW({
+        dexcom_client_ = std::make_unique<DexcomClient>(mock_http_client_, mock_glucose_parser_, 
+                                                       USERNAME, "", PASSWORD, true);
+    });
+}
