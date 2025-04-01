@@ -130,7 +130,7 @@ std::string DexcomClient::getAccountId()
     std::string json = "{\"accountName\":\"" + _username + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_AUTHENTICATE_ENDPOINT, "", json);
 
-    if (response.substr(0, 11) == "HTTP Error:" || response == "Max retries reached")
+    if (response.substr(0, 11) == "HTTP Error:" || response == "Connection Error")
     {
         throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
     }
@@ -147,7 +147,7 @@ std::string DexcomClient::getSessionId()
     std::string json = "{\"accountId\":\"" + _account_id + "\",\"password\":\"" + _password + "\",\"applicationId\":\"" + DexcomConst::DEXCOM_APPLICATION_ID + "\"}";
     std::string response = post(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT, "", json);
 
-    if (response.substr(0, 11) == "HTTP Error:" || response == "Max retries reached")
+    if (response.substr(0, 11) == "HTTP Error:" || response == "Connection Error")
     {
         throw SessionError(DexcomErrors::SessionError::INVALID);
     }
@@ -161,52 +161,49 @@ std::string DexcomClient::getSessionId()
 
 std::string DexcomClient::post(const std::string &endpoint, const std::string &params, const std::string &json)
 {
-    for (int attempt = 0; attempt < DexcomConst::MAX_POST_RETRIES; ++attempt)
-    {
-        try {
-            if (!_httpClient->isConnected() && !_httpClient->connect(_base_url, 443)) {
-                DEBUG_PRINT("Connection failed");
-                continue;
-            }
-
-            std::string url = "/ShareWebServices/Services/" + endpoint;
-            if (!params.empty()) {
-                url += "?" + params;
-            }
-
-            DEBUG_PRINTF("Attempt %d: Sending request to %s\n", attempt + 1, url.c_str());
-
-            std::map<std::string, std::string> headers = {
-                {"Content-Type", "application/json"},
-                {"Connection", "keep-alive"}
-            };
-
-            HttpResponse response = _httpClient->post(url, json, headers);
-
-            DEBUG_PRINTF("Received status code: %d\n", response.statusCode);
-
-            if (response.statusCode == 200) {
-                DEBUG_PRINTF("Response: %s\n", response.body.c_str());
-                return response.body;
-            } else if (response.statusCode == 401) {
-                throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
-            } else if (response.statusCode == 500) {
-                DEBUG_PRINT("Received 500 error, retrying...");
-                _httpClient->disconnect();
-                PLATFORM_DELAY(1000 * (attempt + 1)); // Exponential backoff
-            } else {
-                _httpClient->disconnect();
-                return "HTTP Error: " + std::to_string(response.statusCode);
-            }
-        } catch (const DexcomError& e) {
-            throw;  // Re-throw DexcomError exceptions
-        } catch (const std::exception& e) {
-            DEBUG_PRINTF("Request failed: %s\n", e.what());
-            _httpClient->disconnect();
-            PLATFORM_DELAY(1000 * (attempt + 1));
-        }
+    // Construct the URL
+    std::string url = "/ShareWebServices/Services/" + endpoint;
+    if (!params.empty()) {
+        url += "?" + params;
     }
-    return "Max retries reached";
+
+    DEBUG_PRINTF("Sending request to %s\n", url.c_str());
+
+    // Prepare headers
+    std::map<std::string, std::string> headers = {
+        {"Content-Type", "application/json"},
+        {"Connection", "keep-alive"}
+    };
+
+    try {
+        // Make a single call to _httpClient->post
+        HttpResponse response = _httpClient->post(url, json, headers);
+
+        DEBUG_PRINTF("Received status code: %d\n", response.statusCode);
+
+        // Return the body for successful responses
+        if (response.statusCode == 200) {
+            DEBUG_PRINTF("Response: %s\n", response.body.c_str());
+            return response.body;
+        } 
+        // Throw appropriate exception for client errors
+        else if (response.statusCode == 401) {
+            throw AccountError(DexcomErrors::AccountError::FAILED_AUTHENTICATION);
+        } 
+        // Return a generic error string for other status codes
+        else {
+            return "HTTP Error: " + std::to_string(response.statusCode);
+        }
+    } 
+    // Re-throw DexcomError exceptions
+    catch (const DexcomError& e) {
+        throw;
+    } 
+    // For other exceptions, return a generic error message
+    catch (const std::exception& e) {
+        DEBUG_PRINTF("Request failed: %s\n", e.what());
+        return "Connection Error";
+    }
 }
 
 std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_count)
@@ -223,7 +220,7 @@ std::string DexcomClient::getGlucoseReadingsRaw(uint16_t minutes, uint16_t max_c
     std::string params = "sessionId=" + _session_id + "&minutes=" + std::to_string(minutes) + "&maxCount=" + std::to_string(max_count);
     std::string response = post(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT, params);
 
-    if (response.substr(0, 11) == "HTTP Error:")
+    if (response.substr(0, 11) == "HTTP Error:" || response == "Connection Error")
     {
         throw SessionError(DexcomErrors::SessionError::INVALID);
     }
