@@ -1,3 +1,9 @@
+Task 27
+
+Updated main.cpp to instantiate DexcomClient with both IHttpClient and IGlucoseReadingParser dependencies, correctly wiring the dependency chain and adding proper error handling.
+
+----
+
 Task 26
 
 refactor(DexcomClient): Remove redundant error string checks that duplicated handling already performed in post method
