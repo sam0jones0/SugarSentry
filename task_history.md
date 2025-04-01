@@ -1,3 +1,13 @@
+Task 17
+
+Successfully implemented three test cases for DexcomClient construction failure scenarios:
+
+ConstructorConnectFailure: Tests error handling when HTTP connection fails
+ConstructorGetAccountIdFailure: Tests error handling when account authentication fails
+ConstructorGetSessionIdFailure: Tests error handling when session ID retrieval fails
+
+----
+
 Task 16
 
 Successfully implemented all three test cases for the DexcomClient constructor to verify proper behavior during successful construction.
