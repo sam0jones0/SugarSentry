@@ -1,3 +1,9 @@
+Task 25
+
+Created test_dexcom_utils.cpp with 4 test cases for stringToTrendDirection. Fixed nullptr handling in the original function to prevent crashes.
+
+----
+
 Task 24
 
 Added four tests that verify DexcomClient throws ArgumentError when getGlucoseReadings is called with invalid minutes/max_count parameters.
