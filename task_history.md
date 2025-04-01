@@ -1,3 +1,9 @@
+Task 22
+
+ Verify and adjust `DexcomClient::createSession` and `DexcomClient::getGlucoseReadings` to handle exceptions from the refactored `post` method.
+
+ ----
+
 Task 21
 
 Refactor `DexcomClient::post` to remove its internal retry logic

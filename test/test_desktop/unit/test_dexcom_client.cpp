@@ -336,6 +336,3 @@ TEST_F(DexcomClientTest, GetGlucoseReadingsParserReturnsEmpty) {
     // Verify the result is an empty vector
     EXPECT_TRUE(readings.empty());
 }
-
-// We don't need special tests for post() since it's refactored to be simpler
-// The existing tests already validate the core functionality works
