@@ -30,7 +30,6 @@ std::vector<GlucoseReading> JsonGlucoseReadingParser::parse(const std::string &r
         try {
             GlucoseReading reading(*jsonValue);
             readings.push_back(reading);
-            DEBUG_PRINT("Successfully parsed glucose reading");
         } catch (const std::exception& e) {
             DEBUG_PRINT("Failed to create GlucoseReading: ");
             DEBUG_PRINT(e.what());
