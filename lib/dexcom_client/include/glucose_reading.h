@@ -3,9 +3,10 @@
 
 #include <cstdint>
 #include <ctime>
-#include <ArduinoJson.h>
+#include <memory>
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
+#include "i_json_value.h"
 
 /**
  * @file glucose_reading.h
@@ -16,25 +17,24 @@ class GlucoseReading
 {
 public:
     /**
-     * @brief Constructs a GlucoseReading from JSON data.
+     * @brief Constructs a GlucoseReading from parsed values.
      *
-     * @param jsonGlucoseReading JSON object containing glucose reading data
+     * @param value The glucose value
+     * @param trend The trend direction as a string
+     * @param timestamp The timestamp string in Dexcom format (e.g., "Date(1234567890)")
      */
-    explicit GlucoseReading(const JsonObjectConst &jsonGlucoseReading)
-    {
-        _value = static_cast<uint16_t>(jsonGlucoseReading["Value"].as<int>());
-        _trend = DexcomUtils::stringToTrendDirection(jsonGlucoseReading["Trend"].as<const char *>());
+    /**
+     * @brief Constructs a GlucoseReading from raw values.
+     */
+    GlucoseReading(uint16_t value, const std::string& trend, const std::string& timestamp);
 
-        const char *wtStr = jsonGlucoseReading["WT"].as<const char *>();
-        if (wtStr && *wtStr == 'D')
-        {
-            _timestamp = strtoull(wtStr + 5, nullptr, 10) / 1000; // milliseconds to seconds
-        }
-        else
-        {
-            _timestamp = 0;
-        }
-    }
+    /**
+     * @brief Constructs a GlucoseReading from a JSON value.
+     *
+     * @param json The JSON value containing glucose reading data
+     * @throws std::runtime_error if required fields are missing or invalid
+     */
+    explicit GlucoseReading(const IJsonValue& json);
 
     uint16_t getValue() const noexcept { return _value; }
     uint16_t getMgDl() const noexcept { return _value; }

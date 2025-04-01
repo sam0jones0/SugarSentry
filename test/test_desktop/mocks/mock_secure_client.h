@@ -1,37 +1,22 @@
-#ifndef MOCK_SECURE_CLIENT_H
-#define MOCK_SECURE_CLIENT_H
+#pragma once
 
-#include "i_secure_client.h"
+#include <gmock/gmock.h>
 #include <string>
-#include <vector>
+#include "i_secure_client.h"
 
 class MockSecureClient : public ISecureClient
 {
 public:
-    bool connect(const char *host, uint16_t port) override;
-    size_t write(const uint8_t *buf, size_t size) override;
-    size_t write(const char *buf) override;
-    int available() override;
-    int read() override;
-    int read(uint8_t *buf, size_t size) override;
-    void stop() override;
-    bool connected() override;
-    void setTimeout(uint32_t timeout) override;
-    void println(const std::string& data) override;
-    void println() override;
-    std::string readStringUntil(char terminator) override;
-
-    // Test control functions
-    void setConnected(bool isConnected);
-    void setNextReadData(const std::string &data);
-    std::string getLastWrittenData() const;
-
-private:
-    bool isConnected = false;
-    std::string readData;
-    size_t readIndex = 0;
-    uint32_t timeout = 0;
-    std::vector<uint8_t> writtenData;
+    MOCK_METHOD(bool, connect, (const char* host, uint16_t port), (override));
+    MOCK_METHOD(size_t, write, (const uint8_t* buf, size_t size), (override));
+    MOCK_METHOD(size_t, write, (const char* buf), (override));
+    MOCK_METHOD(int, available, (), (override));
+    MOCK_METHOD(int, read, (), (override));
+    MOCK_METHOD(int, read, (uint8_t* buf, size_t size), (override));
+    MOCK_METHOD(void, stop, (), (override));
+    MOCK_METHOD(bool, connected, (), (override));
+    MOCK_METHOD(void, setTimeout, (uint32_t timeout), (override));
+    MOCK_METHOD(void, println, (const std::string& data), (override));
+    MOCK_METHOD(void, println, (), (override));
+    MOCK_METHOD(std::string, readStringUntil, (char terminator), (override));
 };
-
-#endif // MOCK_SECURE_CLIENT_H

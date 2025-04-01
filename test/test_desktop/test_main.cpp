@@ -1,23 +1,27 @@
-#include <unity.h>
+#include <gtest/gtest.h>
 
-void test_stringToTrendDirection_valid_inputs();
-void test_stringToTrendDirection_invalid_inputs();
-void test_glucose_reading_construction();
-void test_glucose_reading_invalid_input();
-void test_sample();
-void run_dexcom_client_tests();
+#if defined(ARDUINO)
+#include <Arduino.h>
 
-int main(int argc, char **argv)
-{
-    UNITY_BEGIN();
+void setup() {
+    // should be the same value as for the `test_speed` option in "platformio.ini"
+    Serial.begin(115200);
 
-    RUN_TEST(test_stringToTrendDirection_valid_inputs);
-    RUN_TEST(test_stringToTrendDirection_invalid_inputs);
-
-    RUN_TEST(test_glucose_reading_construction);
-    RUN_TEST(test_glucose_reading_invalid_input);
-
-    run_dexcom_client_tests();
-
-    return UNITY_END();
+    ::testing::InitGoogleTest();
 }
+
+void loop() {
+    // Run tests
+    if (RUN_ALL_TESTS())
+    ;
+
+    // sleep for 1 sec
+    delay(1000);
+}
+
+#else
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+#endif

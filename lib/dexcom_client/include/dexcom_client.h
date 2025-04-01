@@ -1,10 +1,15 @@
 #ifndef DEXCOM_CLIENT_H
 #define DEXCOM_CLIENT_H
 
-#include <i_secure_client.h>
+#include <cstdint>
+#include <string>
 #include <vector>
 #include <optional>
-#include <string>
+#include <map>
+#include <memory>
+
+#include "i_http_client.h"
+#include "i_glucose_reading_parser.h"
 #include "dexcom_constants.h"
 #include "dexcom_errors.h"
 #include "glucose_reading.h"
@@ -14,11 +19,28 @@
  * @brief Defines the DexcomClient class for interacting with the Dexcom API.
  *
  * This class handles authentication, session management, and retrieval of glucose readings
- * from the Dexcom API. It uses an ISecureClient for network communication.
+ * from the Dexcom API. It uses an IHttpClient for network communication.
  */
 
-class DexcomClient
-{
+class DexcomClient {
+private:
+    std::shared_ptr<IHttpClient> _httpClient;
+    std::shared_ptr<IGlucoseReadingParser> _glucoseParser;
+    std::string _base_url;
+    std::string _password;
+    std::string _account_id;
+    std::string _username;
+    std::string _session_id;
+
+    void createSession();
+    std::string getAccountId();
+    std::string getSessionId();
+    std::string post(const std::string &endpoint,
+                    const std::string &params = "",
+                    const std::string &json = "");
+    std::string getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES,
+                                     uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
+
 public:
     /**
      * @brief Constructs a DexcomClient and initializes a session with the Dexcom API.
@@ -32,11 +54,14 @@ public:
      * @throws AccountError if authentication fails
      * @throws SessionError if session creation fails
      */
-    DexcomClient(ISecureClient &client,
-                 const std::string &username = "",
-                 const std::string &account_id = "",
-                 const std::string &password = "",
-                 bool ous = false);
+    DexcomClient(
+        std::shared_ptr<IHttpClient> httpClient,
+        std::shared_ptr<IGlucoseReadingParser> glucoseParser,
+        const std::string& username = "",
+        const std::string& account_id = "",
+        const std::string& password = "",
+        bool ous = false
+    );
 
     ~DexcomClient();
 
@@ -71,35 +96,6 @@ public:
      */
     std::optional<GlucoseReading> getCurrentGlucoseReading();
 
-private:
-    ISecureClient &_client;
-    std::string _base_url;
-    std::string _password;
-    std::string _account_id;
-    std::string _username;
-    std::string _session_id;
-    bool _connected;
-
-    void createSession();
-
-    std::string getAccountId();
-    std::string getSessionId();
-
-    std::string post(const std::string &endpoint,
-                     const std::string &params = "",
-                     const std::string &json = "");
-
-    std::optional<DexcomError> handleResponse(const std::string &response);
-
-    std::string getGlucoseReadingsRaw(uint16_t minutes = DexcomConst::MAX_MINUTES, uint16_t max_count = DexcomConst::MAX_MAX_COUNT);
-
-    std::vector<GlucoseReading> parseGlucoseReadings(const std::string &response);
-
-    bool ensureConnected();
-
-    void disconnect();
-
-    int parseHttpStatusCode(const std::string &statusLine);
 };
 
 #endif // DEXCOM_CLIENT_H

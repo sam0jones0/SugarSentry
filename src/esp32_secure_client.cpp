@@ -20,28 +20,26 @@ bool ESP32SecureClient::connect(const char *host, uint16_t port)
         Serial.println("Falling back to insecure");
     }
 
-    for (int i = 0; i < DexcomConst::MAX_CONNECT_RETRIES; i++)
+    // Single connection attempt
+    if (_client.connect(host, port))
     {
-        Serial.printf("Connection attempt %d\n", i + 1);
-        if (_client.connect(host, port))
+        Serial.println("TCP connection established");
+        if (_client.connected())
         {
-            Serial.println("TCP connection established");
-            if (_client.connected())
-            {
-                Serial.println("SSL/TLS handshake completed successfully");
-                return true;
-            }
-            else
-            {
-                Serial.println("SSL/TLS handshake failed");
-            }
+            Serial.println("SSL/TLS handshake completed successfully");
+            return true;
         }
-        char error_buffer[100];
-        _client.lastError(error_buffer, sizeof(error_buffer));
-        Serial.printf("Connection attempt %d failed. Error: %s\n", i + 1, error_buffer);
-        delay(1000 * (i + 1)); // Increasing delay between retries
+        else
+        {
+            Serial.println("SSL/TLS handshake failed");
+        }
     }
-    Serial.println("All connection attempts failed");
+    
+    // Log the error
+    char error_buffer[100];
+    _client.lastError(error_buffer, sizeof(error_buffer));
+    Serial.printf("Connection failed. Error: %s\n", error_buffer);
+    
     return false;
 }
 
