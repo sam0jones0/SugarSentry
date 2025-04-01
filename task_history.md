@@ -1,3 +1,9 @@
+Task 18
+
+I successfully implemented the getGlucoseReadings tests and its interaction with the parser as requested. 
+
+----
+
 Task 17
 
 Successfully implemented three test cases for DexcomClient construction failure scenarios:
