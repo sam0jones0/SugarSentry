@@ -1,3 +1,9 @@
+Task 24
+
+Added four tests that verify DexcomClient throws ArgumentError when getGlucoseReadings is called with invalid minutes/max_count parameters.
+
+----
+
 Task 23
 
 Add a new test case to `test/test_desktop/unit/test_dexcom_client.cpp` to specifically verify the session refresh mechanism within the `DexcomClient::getGlucoseReadings` method.

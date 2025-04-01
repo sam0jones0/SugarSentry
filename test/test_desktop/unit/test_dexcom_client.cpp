@@ -400,3 +400,51 @@ TEST_F(DexcomClientTest, GetGlucoseReadingsRecoversFromSessionError) {
         EXPECT_EQ(actualReadings[i].getTimestamp(), expectedReadings[i].getTimestamp());
     }
 }
+
+TEST_F(DexcomClientTest, GetGlucoseReadings_InvalidMinutes_ThrowsArgumentError) {
+    // Set up successful construction expectations
+    setupSuccessfulConstructionExpectations();
+    
+    // No HTTP post calls should be made for glucose readings
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT), testing::_, testing::_))
+        .Times(0);
+    
+    // Test that calling getGlucoseReadings with minutes = 0 throws ArgumentError
+    EXPECT_THROW(dexcom_client_->getGlucoseReadings(0, 10), ArgumentError);
+}
+
+TEST_F(DexcomClientTest, GetGlucoseReadings_ExcessiveMinutes_ThrowsArgumentError) {
+    // Set up successful construction expectations
+    setupSuccessfulConstructionExpectations();
+    
+    // No HTTP post calls should be made for glucose readings
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT), testing::_, testing::_))
+        .Times(0);
+    
+    // Test that calling getGlucoseReadings with minutes > DexcomConst::MAX_MINUTES throws ArgumentError
+    EXPECT_THROW(dexcom_client_->getGlucoseReadings(DexcomConst::MAX_MINUTES + 1, 10), ArgumentError);
+}
+
+TEST_F(DexcomClientTest, GetGlucoseReadings_InvalidMaxCount_ThrowsArgumentError) {
+    // Set up successful construction expectations
+    setupSuccessfulConstructionExpectations();
+    
+    // No HTTP post calls should be made for glucose readings
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT), testing::_, testing::_))
+        .Times(0);
+    
+    // Test that calling getGlucoseReadings with max_count = 0 throws ArgumentError
+    EXPECT_THROW(dexcom_client_->getGlucoseReadings(60, 0), ArgumentError);
+}
+
+TEST_F(DexcomClientTest, GetGlucoseReadings_ExcessiveMaxCount_ThrowsArgumentError) {
+    // Set up successful construction expectations
+    setupSuccessfulConstructionExpectations();
+    
+    // No HTTP post calls should be made for glucose readings
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT), testing::_, testing::_))
+        .Times(0);
+    
+    // Test that calling getGlucoseReadings with max_count > DexcomConst::MAX_MAX_COUNT throws ArgumentError
+    EXPECT_THROW(dexcom_client_->getGlucoseReadings(60, DexcomConst::MAX_MAX_COUNT + 1), ArgumentError);
+}
