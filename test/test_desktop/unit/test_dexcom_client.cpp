@@ -336,3 +336,67 @@ TEST_F(DexcomClientTest, GetGlucoseReadingsParserReturnsEmpty) {
     // Verify the result is an empty vector
     EXPECT_TRUE(readings.empty());
 }
+
+TEST_F(DexcomClientTest, GetGlucoseReadingsRecoversFromSessionError) {
+    // Define expected raw JSON response and glucose readings
+    const std::string rawJsonResponseString = 
+        "[{\"Value\":120,\"Trend\":\"Flat\",\"WT\":\"Date(1609459200000)\"},{\"Value\":118,\"Trend\":\"FortyFiveDown\",\"WT\":\"Date(1609455600000)\"}]";
+    
+    // Define expected GlucoseReading vector
+    std::vector<GlucoseReading> expectedReadings;
+    expectedReadings.push_back(GlucoseReading(120, "Flat", "Date(1609459200000)"));
+    expectedReadings.push_back(GlucoseReading(118, "FortyFiveDown", "Date(1609455600000)"));
+    
+    // Use InSequence to enforce the strict order of mock calls
+    testing::InSequence seq;
+    
+    // Mock initial construction (using ACCOUNT_ID but not USERNAME)
+    // 1. Mock successful connection
+    EXPECT_CALL(*mock_http_client_, connect(testing::_, 443))
+        .Times(1)
+        .WillOnce(testing::Return(true));
+    
+    // isConnected() will be handled by ON_CALL in SetUp
+    
+    // 3. Mock successful session ID retrieval
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, "\"" + std::string(SESSION_ID) + "\"", {}}));
+    
+    // Instantiate client with ACCOUNT_ID but no USERNAME
+    dexcom_client_ = std::make_unique<DexcomClient>(mock_http_client_, mock_glucose_parser_, 
+                                                 "", ACCOUNT_ID, PASSWORD, false);
+    
+    // Mock first glucose reading attempt (failure with HTTP 500)
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{500, "Internal Server Error", {}}));
+    
+    // Mock session refresh (createSession call)
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_LOGIN_ID_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, "\"" + std::string(SESSION_ID) + "\"", {}}));
+    
+    // Mock second glucose reading attempt (success)
+    EXPECT_CALL(*mock_http_client_, post(testing::HasSubstr(DexcomConst::DEXCOM_GLUCOSE_READINGS_ENDPOINT), testing::_, testing::_))
+        .Times(1)
+        .WillOnce(testing::Return(HttpResponse{200, rawJsonResponseString, {}}));
+    
+    // Mock parser to return expected readings
+    EXPECT_CALL(*mock_glucose_parser_, parse(rawJsonResponseString))
+        .Times(1)
+        .WillOnce(testing::Return(expectedReadings));
+    
+    // Execute the test
+    auto actualReadings = dexcom_client_->getGlucoseReadings(60, 10);
+    
+    // Verify results
+    ASSERT_EQ(actualReadings.size(), expectedReadings.size());
+    
+    // Check specific elements
+    for (size_t i = 0; i < actualReadings.size(); ++i) {
+        EXPECT_EQ(actualReadings[i].getValue(), expectedReadings[i].getValue());
+        EXPECT_EQ(actualReadings[i].getTrend(), expectedReadings[i].getTrend());
+        EXPECT_EQ(actualReadings[i].getTimestamp(), expectedReadings[i].getTimestamp());
+    }
+}

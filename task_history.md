@@ -1,3 +1,9 @@
+Task 23
+
+Add a new test case to `test/test_desktop/unit/test_dexcom_client.cpp` to specifically verify the session refresh mechanism within the `DexcomClient::getGlucoseReadings` method.
+
+----
+
 Task 22
 
  Verify and adjust `DexcomClient::createSession` and `DexcomClient::getGlucoseReadings` to handle exceptions from the refactored `post` method.
