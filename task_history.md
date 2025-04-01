@@ -1,3 +1,9 @@
+Task 20
+
+Refactor `ESP32SecureClient::connect` to remove internal retry logic
+
+----
+
 Task 19
 
 Successfully refactored the DexcomClient::post method to remove the retry loop and connection management logic. The method now focuses on its core responsibility of API interaction while delegating connection handling and retry logic to the IHttpClient implementation. Updated related code to maintain backward compatibility with the existing error handling patterns. All tests now pass successfully.
