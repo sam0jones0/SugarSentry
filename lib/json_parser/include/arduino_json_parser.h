@@ -32,6 +32,8 @@ class ArduinoJsonParser : public IJsonParser {
 public:
     std::shared_ptr<IJsonValue> parseObject(const std::string& jsonString) override;
     std::vector<std::shared_ptr<IJsonValue>> parseArray(const std::string& jsonString) override;
+    bool parseJsonArray(const std::string& jsonString, 
+                       std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) override;
 
 private:
     static constexpr size_t JSON_BUFFER_SIZE = 2048;  // Adjust size as needed

@@ -72,3 +72,11 @@ std::vector<std::shared_ptr<IJsonValue>> ArduinoJsonParser::parseArray(const std
 
     return result;
 }
+
+bool ArduinoJsonParser::parseJsonArray(const std::string& jsonString, 
+                                     std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) {
+    // TODO: Implement efficient array parsing with callback
+    // This is a stub implementation that will be completed in a future task
+    DEBUG_PRINT("parseJsonArray called but not yet implemented");
+    return false;
+}

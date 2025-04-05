@@ -1,3 +1,19 @@
+Task 30
+
+Added the necessary includes to i_json_parser.h:
+
+Added #include <functional> to enable the use of std::function
+Added #include <ArduinoJson.h> to make JsonObjectConst available
+Added the new pure virtual method to the IJsonParser interface:
+
+virtual bool parseJsonArray(const std::string& jsonString, 
+                           std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) = 0;
+Updated the MockJsonParser class to include the new method with a proper MOCK_METHOD declaration.
+
+Added a stub implementation to ArduinoJsonParser to ensure the code compiles.
+
+----
+
 Task 29
 
 Added JsonObjectConst constructor to GlucoseReading to avoid intermediate parsing steps, with proper type checking and error handling. All tests passing.
