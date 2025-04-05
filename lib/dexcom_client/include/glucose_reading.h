@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <ctime>
 #include <memory>
+#include <ArduinoJson.h>
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
 #include "i_json_value.h"
@@ -35,6 +36,14 @@ public:
      * @throws std::runtime_error if required fields are missing or invalid
      */
     explicit GlucoseReading(const IJsonValue& json);
+
+    /**
+     * @brief Constructs a GlucoseReading directly from an ArduinoJson object.
+     *
+     * @param obj The JSON object containing glucose reading data
+     * @throws std::runtime_error if required fields are missing or invalid
+     */
+    explicit GlucoseReading(ArduinoJson::JsonObjectConst obj);
 
     uint16_t getValue() const noexcept { return _value; }
     uint16_t getMgDl() const noexcept { return _value; }

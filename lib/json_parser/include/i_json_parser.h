@@ -3,38 +3,40 @@
 
 #include <string>
 #include <vector>
-#include <optional>
 #include <memory>
-#include "glucose_reading.h"
-#include "dexcom_errors.h"
+#include <functional>
+#include <ArduinoJson.h>
+#include "i_json_value.h"
 
 /**
- * @brief Interface for JSON parsing operations
+ * @brief Interface for basic JSON parsing operations
  */
 class IJsonParser {
 public:
     virtual ~IJsonParser() = default;
 
     /**
-     * @brief Parse a JSON string into a GlucoseReading object
+     * @brief Parse a JSON string into an object
      * @param jsonString The JSON string to parse
-     * @return Optional GlucoseReading, empty if parsing fails
+     * @return Shared pointer to IJsonValue, null if parsing fails
      */
-    virtual std::optional<GlucoseReading> parseGlucoseReading(const std::string& jsonString) = 0;
+    virtual std::shared_ptr<IJsonValue> parseObject(const std::string& jsonString) = 0;
 
     /**
-     * @brief Parse a JSON string containing multiple glucose readings
+     * @brief Parse a JSON string into an array
      * @param jsonString The JSON string to parse
-     * @return Vector of GlucoseReading objects
+     * @return Vector of IJsonValue objects, empty if parsing fails
      */
-    virtual std::vector<GlucoseReading> parseGlucoseReadings(const std::string& jsonString) = 0;
+    virtual std::vector<std::shared_ptr<IJsonValue>> parseArray(const std::string& jsonString) = 0;
 
     /**
-     * @brief Parse an error response from the Dexcom API
+     * @brief Parse a JSON string into an array and process each element directly
      * @param jsonString The JSON string to parse
-     * @return Optional DexcomError, empty if no error is found
+     * @param elementProcessor Function to process each array element
+     * @return True if parsing was successful, false otherwise
      */
-    virtual std::unique_ptr<DexcomError> parseErrorResponse(const std::string& jsonString) = 0;
+    virtual bool parseJsonArray(const std::string& jsonString, 
+                               std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) = 0;
 };
 
 #endif // I_JSON_PARSER_H
