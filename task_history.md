@@ -1,3 +1,9 @@
+Task 29
+
+Added JsonObjectConst constructor to GlucoseReading to avoid intermediate parsing steps, with proper type checking and error handling. All tests passing.
+
+----
+
 Task 28
 
 The project currently defines the `IJsonParser` interface incorrectly within `lib/json_parser/include/i_json_value.h`. This needs to be moved to its own header file.
