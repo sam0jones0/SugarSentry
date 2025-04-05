@@ -13,28 +13,30 @@ std::vector<GlucoseReading> JsonGlucoseReadingParser::parse(const std::string &r
     DEBUG_PRINT("Parsing glucose readings. Raw response:");
     DEBUG_PRINT(response.c_str());
 
-    auto jsonArray = _jsonParser->parseArray(response);
-    if (jsonArray.empty()) {
-        DEBUG_PRINT("Failed to parse JSON array");
-        return readings;
-    }
+    bool parseSuccess = _jsonParser->parseJsonArray(response, 
+        [&](ArduinoJson::JsonObjectConst obj) -> bool {
+            // Check if we have already reached the maximum number of readings
+            if (readings.size() >= DexcomConst::MAX_MAX_COUNT) {
+                DEBUG_PRINT("Reached MAX_MAX_COUNT limit, stopping parse.");
+                return false; // Stop processing further elements
+            }
 
-    for (const auto& jsonValue : jsonArray) {
-        // Stop processing if we've reached the maximum number of readings
-        if (readings.size() >= DexcomConst::MAX_MAX_COUNT) {
-            break;
+            // Try to construct a GlucoseReading from the JSON object
+            try {
+                // Use emplace_back for potentially slightly better efficiency
+                readings.emplace_back(obj); // Calls the new constructor GlucoseReading(JsonObjectConst)
+            } catch (const std::exception& e) {
+                // Log the error but continue processing other elements
+                DEBUG_PRINT("Skipping invalid glucose reading object: ");
+                DEBUG_PRINT(e.what());
+            }
+
+            return true; // Continue processing the next element
         }
-        
-        if (!jsonValue) continue;
-        
-        try {
-            GlucoseReading reading(*jsonValue);
-            readings.push_back(reading);
-        } catch (const std::exception& e) {
-            DEBUG_PRINT("Failed to create GlucoseReading: ");
-            DEBUG_PRINT(e.what());
-            continue;
-        }
+    );
+
+    if (!parseSuccess) {
+        DEBUG_PRINT("Failed to parse JSON array");
     }
 
     DEBUG_PRINT("Total glucose readings parsed: ");
