@@ -75,8 +75,32 @@ std::vector<std::shared_ptr<IJsonValue>> ArduinoJsonParser::parseArray(const std
 
 bool ArduinoJsonParser::parseJsonArray(const std::string& jsonString, 
                                      std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) {
-    // TODO: Implement efficient array parsing with callback
-    // This is a stub implementation that will be completed in a future task
-    DEBUG_PRINT("parseJsonArray called but not yet implemented");
-    return false;
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, jsonString);
+
+    if (error) {
+        DEBUG_PRINT("Failed to parse JSON array: ");
+        DEBUG_PRINT(error.c_str());
+        return false;
+    }
+
+    if (!doc.is<JsonArrayConst>()) {
+        DEBUG_PRINT("JSON is not an array");
+        return false;
+    }
+
+    JsonArrayConst array = doc.as<JsonArrayConst>();
+    for (JsonVariantConst item : array) {
+        if (item.is<JsonObjectConst>()) {
+            bool shouldContinue = elementProcessor(item.as<JsonObjectConst>());
+            if (!shouldContinue) {
+                break; // Processor requested to stop early
+            }
+        } else {
+            // If the element is not an object, skip it but log a warning
+            DEBUG_PRINT("Skipping non-object element in array");
+        }
+    }
+    
+    return true;
 }

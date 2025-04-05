@@ -1,3 +1,9 @@
+Task 31
+
+implemented the ArduinoJsonParser::parseJsonArray method that efficiently processes JSON arrays by applying a callback function to each object element
+
+----
+
 Task 30
 
 Added the necessary includes to i_json_parser.h:
