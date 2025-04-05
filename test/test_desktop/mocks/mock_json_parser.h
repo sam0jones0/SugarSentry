@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "i_json_parser.h"
 #include "i_json_value.h"
 
 class MockJsonParser : public IJsonParser {

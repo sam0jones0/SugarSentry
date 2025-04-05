@@ -2,6 +2,7 @@
 #define ARDUINO_JSON_PARSER_H
 
 #include "i_json_value.h"
+#include "i_json_parser.h"
 #include <ArduinoJson.h>
 
 /**
