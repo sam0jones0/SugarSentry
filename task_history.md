@@ -1,3 +1,9 @@
+Task 33
+
+Updated JsonGlucoseReadingParser tests to use WithArgs<1>(Invoke()) pattern for testing callback-based processing, with explicit verification of error handling and size limits.
+
+----
+
 Task 32
 
 Refactored JsonGlucoseReadingParser::parse to use the more efficient parseJsonArray callback mechanism, eliminating intermediate object creation and adding a test for invalid object handling.

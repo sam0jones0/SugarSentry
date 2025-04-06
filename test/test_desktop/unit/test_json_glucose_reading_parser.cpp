@@ -25,7 +25,10 @@ protected:
 TEST_F(JsonGlucoseReadingParserTest, ParseEmptyArray) {
     // Setup parseJsonArray to return true but not call the callback (empty array)
     EXPECT_CALL(*mock_json_parser, parseJsonArray("[]", testing::_))
-        .WillOnce(testing::Return(true));
+        .WillOnce(testing::WithArgs<1>(testing::Invoke([](std::function<bool(ArduinoJson::JsonObjectConst)> processor){
+            // Empty array - processor is never called
+            return true;
+        })));
     
     auto readings = parser->parse("[]");
     EXPECT_EQ(0, readings.size());
@@ -41,32 +44,29 @@ TEST_F(JsonGlucoseReadingParserTest, ParseInvalidJson) {
 }
 
 TEST_F(JsonGlucoseReadingParserTest, ParseValidArray) {
-    // Use DoAnswer to call the callback with valid JSON objects
+    // Use WithArgs to capture and invoke the callback with test objects
     EXPECT_CALL(*mock_json_parser, parseJsonArray("[{},{}]", testing::_))
-        .WillOnce(testing::DoAll(
-            // First callback invocation - simulate first JSON object
-            testing::Invoke([](const std::string&, std::function<bool(ArduinoJson::JsonObjectConst)> callback) {
-                // Create a JSON document for our test
-                ArduinoJson::StaticJsonDocument<512> doc;
-                doc["Value"] = 120;
-                doc["Trend"] = "Flat";
-                doc["WT"] = "Date(1609459200000)";
+        .WillOnce(testing::WithArgs<1>(testing::Invoke(
+            [](std::function<bool(ArduinoJson::JsonObjectConst)> processor) {
+                // Create first test JSON object
+                StaticJsonDocument<256> doc1;
+                deserializeJson(doc1, "{\"Value\":120,\"Trend\":\"Flat\",\"WT\":\"Date(1609459200000)\"}");
+                JsonObjectConst obj1 = doc1.as<JsonObjectConst>();
                 
-                // Call the callback with our object
-                callback(doc.as<ArduinoJson::JsonObjectConst>());
+                // Process first object
+                processor(obj1);
                 
-                // Create a second JSON object
-                ArduinoJson::StaticJsonDocument<512> doc2;
-                doc2["Value"] = 120;
-                doc2["Trend"] = "Flat";
-                doc2["WT"] = "Date(1609459200000)";
+                // Create second test JSON object
+                StaticJsonDocument<256> doc2;
+                deserializeJson(doc2, "{\"Value\":118,\"Trend\":\"FortyFiveDown\",\"WT\":\"Date(1609455600000)\"}");
+                JsonObjectConst obj2 = doc2.as<JsonObjectConst>();
                 
-                // Call the callback again
-                callback(doc2.as<ArduinoJson::JsonObjectConst>());
+                // Process second object
+                processor(obj2);
                 
-                return true;
-            })
-        ));
+                return true; // Simulate successful parsing
+            }
+        )));
     
     auto readings = parser->parse("[{},{}]");
     EXPECT_EQ(2, readings.size());
@@ -75,9 +75,9 @@ TEST_F(JsonGlucoseReadingParserTest, ParseValidArray) {
     EXPECT_EQ(120, readings[0].getValue());
     EXPECT_EQ(DexcomConst::TrendDirection::Flat, readings[0].getTrend());
     
-    // Verify second reading
-    EXPECT_EQ(120, readings[1].getValue());
-    EXPECT_EQ(DexcomConst::TrendDirection::Flat, readings[1].getTrend());
+    // Verify second reading (with different values)
+    EXPECT_EQ(118, readings[1].getValue());
+    EXPECT_EQ(DexcomConst::TrendDirection::FortyFiveDown, readings[1].getTrend());
 }
 
 TEST_F(JsonGlucoseReadingParserTest, ParseArrayWithInvalidObject) {
@@ -87,29 +87,29 @@ TEST_F(JsonGlucoseReadingParserTest, ParseArrayWithInvalidObject) {
     // Use WithArgs to capture and invoke the callback with our test data
     EXPECT_CALL(*mock_json_parser, parseJsonArray(mixedArray, testing::_))
         .WillOnce(testing::WithArgs<1>(testing::Invoke(
-            [](std::function<bool(ArduinoJson::JsonObjectConst)> callback) {
+            [](std::function<bool(ArduinoJson::JsonObjectConst)> processor) {
                 // First valid object
-                ArduinoJson::StaticJsonDocument<512> valid1;
-                valid1["Value"] = 120;
-                valid1["Trend"] = "Flat";
-                valid1["WT"] = "Date(1609459200000)";
+                StaticJsonDocument<256> valid1;
+                deserializeJson(valid1, "{\"Value\":120,\"Trend\":\"Flat\",\"WT\":\"Date(1609459200000)\"}");
+                JsonObjectConst obj1 = valid1.as<JsonObjectConst>();
                 
                 // Invalid object (missing required WT field)
-                ArduinoJson::StaticJsonDocument<512> invalid;
-                invalid["Value"] = 130;
-                invalid["Trend"] = "FortyFiveUp";
-                // No WT field, should cause constructor to throw
+                // This should cause the GlucoseReading constructor to throw an exception
+                // which should be caught by the JsonGlucoseReadingParser::parse method
+                StaticJsonDocument<256> invalid;
+                deserializeJson(invalid, "{\"Value\":130,\"Trend\":\"FortyFiveUp\"}");
+                JsonObjectConst obj2 = invalid.as<JsonObjectConst>();
                 
                 // Second valid object
-                ArduinoJson::StaticJsonDocument<512> valid2;
-                valid2["Value"] = 140;
-                valid2["Trend"] = "SingleDown";
-                valid2["WT"] = "Date(1609459800000)";
+                StaticJsonDocument<256> valid2;
+                deserializeJson(valid2, "{\"Value\":140,\"Trend\":\"SingleDown\",\"WT\":\"Date(1609459800000)\"}");
+                JsonObjectConst obj3 = valid2.as<JsonObjectConst>();
                 
                 // Process all three objects in sequence
-                callback(valid1.as<ArduinoJson::JsonObjectConst>());
-                callback(invalid.as<ArduinoJson::JsonObjectConst>());
-                callback(valid2.as<ArduinoJson::JsonObjectConst>());
+                // The second call should throw but be caught inside the parser
+                processor(obj1); // Should succeed
+                processor(obj2); // Should throw, but be caught by the processor's try/catch
+                processor(obj3); // Should still be processed after the exception
                 
                 return true;
             }
@@ -118,7 +118,8 @@ TEST_F(JsonGlucoseReadingParserTest, ParseArrayWithInvalidObject) {
     // Parse the array
     auto readings = parser->parse(mixedArray);
     
-    // Should have only 2 readings (the valid ones)
+    // Should have only 2 readings (the valid ones) as the invalid one caused an exception
+    // that was caught inside the JsonGlucoseReadingParser::parse method
     EXPECT_EQ(2, readings.size());
     
     // Verify first reading
@@ -139,37 +140,47 @@ TEST_F(JsonGlucoseReadingParserTest, ParseMaxSizeArray) {
     }
     largeArray += "]";
     
-    // Test that the processing stops after MAX_MAX_COUNT elements
+    // Test that the processor callback returns false after MAX_MAX_COUNT elements
     EXPECT_CALL(*mock_json_parser, parseJsonArray(largeArray, testing::_))
-        .WillOnce(testing::DoAll(
-            testing::Invoke([](const std::string&, std::function<bool(ArduinoJson::JsonObjectConst)> callback) {
-                // Create a JSON object template
-                ArduinoJson::StaticJsonDocument<512> doc;
-                doc["Value"] = 120;
-                doc["Trend"] = "Flat";
-                doc["WT"] = "Date(1609459200000)";
-                auto jsonObj = doc.as<ArduinoJson::JsonObjectConst>();
+        .WillOnce(testing::WithArgs<1>(testing::Invoke(
+            [](std::function<bool(ArduinoJson::JsonObjectConst)> processor) {
+                // Create a valid JSON object template to use for all calls
+                StaticJsonDocument<256> doc;
+                deserializeJson(doc, "{\"Value\":120,\"Trend\":\"Flat\",\"WT\":\"Date(1609459200000)\"}");
+                JsonObjectConst obj = doc.as<JsonObjectConst>();
                 
-                // Call the callback MAX_MAX_COUNT + 5 times
-                // The callback should return false after MAX_MAX_COUNT calls
-                bool continueProcessing = true;
-                int callCount = 0;
+                // Array to track return values of each processor call
+                std::vector<bool> processorResults;
                 
-                while (continueProcessing && callCount < DexcomConst::MAX_MAX_COUNT + 5) {
-                    continueProcessing = callback(jsonObj);
-                    callCount++;
+                // Call the processor MAX_MAX_COUNT + 5 times and track the results
+                for (int i = 0; i < DexcomConst::MAX_MAX_COUNT + 5; i++) {
+                    bool result = processor(obj);
+                    processorResults.push_back(result);
+                    
+                    // If processor returns false, stop calling it
+                    if (!result) break;
                 }
                 
-                // The callback should have stopped processing after MAX_MAX_COUNT elements
-                EXPECT_EQ(DexcomConst::MAX_MAX_COUNT + 1, callCount);
-                EXPECT_FALSE(continueProcessing);
+                // Verify the processor returns true for exactly MAX_MAX_COUNT calls
+                EXPECT_EQ(DexcomConst::MAX_MAX_COUNT + 1, processorResults.size());
                 
-                return true;
-            })
-        ));
+                // Verify first MAX_MAX_COUNT calls return true
+                for (int i = 0; i < DexcomConst::MAX_MAX_COUNT; i++) {
+                    EXPECT_TRUE(processorResults[i]) 
+                        << "Processor should return true for index " << i;
+                }
+                
+                // Verify the call after MAX_MAX_COUNT returns false
+                EXPECT_FALSE(processorResults[DexcomConst::MAX_MAX_COUNT]) 
+                    << "Processor should return false after MAX_MAX_COUNT limit";
+                
+                return true; // Successful parsing
+            }
+        )));
 
+    // Parse the array
     auto readings = parser->parse(largeArray);
     
-    // Verify that parser correctly limits to MAX_MAX_COUNT
+    // Verify the final readings vector size is exactly MAX_MAX_COUNT
     EXPECT_EQ(DexcomConst::MAX_MAX_COUNT, readings.size());
 }
