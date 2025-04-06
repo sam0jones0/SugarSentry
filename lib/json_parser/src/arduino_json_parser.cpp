@@ -75,7 +75,7 @@ std::vector<std::shared_ptr<IJsonValue>> ArduinoJsonParser::parseArray(const std
 
 bool ArduinoJsonParser::parseJsonArray(const std::string& jsonString, 
                                      std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) {
-    JsonDocument doc;
+    DynamicJsonDocument doc(16384);
     DeserializationError error = deserializeJson(doc, jsonString);
 
     if (error) {
