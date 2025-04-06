@@ -1,3 +1,9 @@
+Task 41
+
+Removed unused static buffer size constant and JsonDocument type alias from ArduinoJsonParser header.
+
+----
+
 Task 40
 
 Successfully cleaned up unnecessary #include directives from multiple files after the removal of IJsonValue, ArduinoJsonValue, and related functionality. Specifically:
