@@ -1,3 +1,49 @@
+Task 33
+
+Updated JsonGlucoseReadingParser tests to use WithArgs<1>(Invoke()) pattern for testing callback-based processing, with explicit verification of error handling and size limits.
+
+----
+
+Task 32
+
+Refactored JsonGlucoseReadingParser::parse to use the more efficient parseJsonArray callback mechanism, eliminating intermediate object creation and adding a test for invalid object handling.
+
+----
+
+Task 31
+
+implemented the ArduinoJsonParser::parseJsonArray method that efficiently processes JSON arrays by applying a callback function to each object element
+
+----
+
+Task 30
+
+Added the necessary includes to i_json_parser.h:
+
+Added #include <functional> to enable the use of std::function
+Added #include <ArduinoJson.h> to make JsonObjectConst available
+Added the new pure virtual method to the IJsonParser interface:
+
+virtual bool parseJsonArray(const std::string& jsonString, 
+                           std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) = 0;
+Updated the MockJsonParser class to include the new method with a proper MOCK_METHOD declaration.
+
+Added a stub implementation to ArduinoJsonParser to ensure the code compiles.
+
+----
+
+Task 29
+
+Added JsonObjectConst constructor to GlucoseReading to avoid intermediate parsing steps, with proper type checking and error handling. All tests passing.
+
+----
+
+Task 28
+
+The project currently defines the `IJsonParser` interface incorrectly within `lib/json_parser/include/i_json_value.h`. This needs to be moved to its own header file.
+
+----
+
 Task 27
 
 Updated main.cpp to instantiate DexcomClient with both IHttpClient and IGlucoseReadingParser dependencies, correctly wiring the dependency chain and adding proper error handling.
