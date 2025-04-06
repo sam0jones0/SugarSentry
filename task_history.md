@@ -1,3 +1,9 @@
+Task 34
+
+Changed ArduinoJsonParser::parseJsonArray to use DynamicJsonDocument(16384) instead of StaticJsonDocument for more efficient memory usage. All tests passing.
+
+----
+
 Task 33
 
 Updated JsonGlucoseReadingParser tests to use WithArgs<1>(Invoke()) pattern for testing callback-based processing, with explicit verification of error handling and size limits.
