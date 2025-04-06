@@ -18,33 +18,7 @@ protected:
     }
 };
 
-TEST_F(ArduinoJsonParserTest, ParseArray) {
-    const char* json = "[{\"name\":\"John\"},{\"name\":\"Jane\"}]";
-    auto results = parser->parseArray(json);
-    EXPECT_EQ(2, results.size());
-    
-    auto name1 = results[0]->getString("name");
-    EXPECT_TRUE(name1.has_value());
-    EXPECT_STREQ("John", name1.value().c_str());
-    
-    auto name2 = results[1]->getString("name");
-    EXPECT_TRUE(name2.has_value());
-    EXPECT_STREQ("Jane", name2.value().c_str());
-}
-
-TEST_F(ArduinoJsonParserTest, ParseEmptyArray) {
-    const char* json = "[]";
-    auto results = parser->parseArray(json);
-    EXPECT_EQ(0, results.size());
-}
-
-TEST_F(ArduinoJsonParserTest, ParseInvalidArray) {
-    const char* json = "[{\"name\":\"John\",}]"; // Extra comma
-    auto results = parser->parseArray(json);
-    EXPECT_EQ(0, results.size());
-}
-
-// New tests for parseJsonArray
+// Tests for parseJsonArray
 
 TEST_F(ArduinoJsonParserTest, ParseJsonArrayValid) {
     const char* json = "[{\"key\":1},{\"key\":2}]";

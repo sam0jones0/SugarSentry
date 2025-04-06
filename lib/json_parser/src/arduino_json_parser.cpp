@@ -29,32 +29,6 @@ std::optional<bool> ArduinoJsonValue::getBool(const std::string& key) const {
     return _obj[key].as<bool>();
 }
 
-std::vector<std::shared_ptr<IJsonValue>> ArduinoJsonParser::parseArray(const std::string& jsonString) {
-    std::vector<std::shared_ptr<IJsonValue>> result;
-    auto arrayDoc = std::make_unique<JsonDocument>();
-    DeserializationError error = deserializeJson(*arrayDoc, jsonString);
-
-    if (error) {
-        DEBUG_PRINT("Failed to parse JSON array: ");
-        DEBUG_PRINT(error.c_str());
-        return result;
-    }
-
-    if (!arrayDoc->is<JsonArray>()) {
-        DEBUG_PRINT("JSON is not an array");
-        return result;
-    }
-
-    JsonArrayConst array = arrayDoc->as<JsonArrayConst>();
-    for (JsonVariantConst item : array) {
-        auto itemDoc = std::make_unique<JsonDocument>();
-        itemDoc->to<JsonObject>().set(item);
-        result.push_back(std::make_shared<ArduinoJsonValue>(*itemDoc));
-    }
-
-    return result;
-}
-
 bool ArduinoJsonParser::parseJsonArray(const std::string& jsonString, 
                                      std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) {
     DynamicJsonDocument doc(16384);

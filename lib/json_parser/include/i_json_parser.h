@@ -16,13 +16,6 @@ public:
     virtual ~IJsonParser() = default;
 
     /**
-     * @brief Parse a JSON string into an array
-     * @param jsonString The JSON string to parse
-     * @return Vector of IJsonValue objects, empty if parsing fails
-     */
-    virtual std::vector<std::shared_ptr<IJsonValue>> parseArray(const std::string& jsonString) = 0;
-
-    /**
      * @brief Parse a JSON string into an array and process each element directly
      * @param jsonString The JSON string to parse
      * @param elementProcessor Function to process each array element

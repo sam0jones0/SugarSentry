@@ -1,3 +1,9 @@
+Task 37
+
+Removed unused parseArray method from IJsonParser interface, implementation, mock, and tests. Fixed code duplication in arduino_json_parser.cpp.
+
+----
+
 Task 36
 
 Removed parseObject method from IJsonParser interface, its implementation, mock, and tests as it became redundant after previous callback-based refactoring.
