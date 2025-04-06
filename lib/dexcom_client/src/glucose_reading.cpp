@@ -13,6 +13,8 @@ GlucoseReading::GlucoseReading(uint16_t value, const std::string& trend, const s
     }
 }
 
+// Constructor commented out due to IJsonValue removal. Will be fixed in next prompt.
+/*
 GlucoseReading::GlucoseReading(const IJsonValue& json)
 {
     auto value = json.getInt("Value");
@@ -37,6 +39,7 @@ GlucoseReading::GlucoseReading(const IJsonValue& json)
         _timestamp = 0;
     }
 }
+*/
 
 GlucoseReading::GlucoseReading(ArduinoJson::JsonObjectConst obj)
 {

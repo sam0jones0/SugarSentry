@@ -1,34 +1,6 @@
 #include "arduino_json_parser.h"
 #include "debug_print.h"
 
-std::optional<std::string> ArduinoJsonValue::getString(const std::string& key) const {
-    if (!_obj.containsKey(key) || !_obj[key].is<const char*>()) {
-        return std::nullopt;
-    }
-    return std::string(_obj[key].as<const char*>());
-}
-
-std::optional<int> ArduinoJsonValue::getInt(const std::string& key) const {
-    if (!_obj.containsKey(key) || !_obj[key].is<int>()) {
-        return std::nullopt;
-    }
-    return _obj[key].as<int>();
-}
-
-std::optional<double> ArduinoJsonValue::getDouble(const std::string& key) const {
-    if (!_obj.containsKey(key) || !_obj[key].is<double>()) {
-        return std::nullopt;
-    }
-    return _obj[key].as<double>();
-}
-
-std::optional<bool> ArduinoJsonValue::getBool(const std::string& key) const {
-    if (!_obj.containsKey(key) || !_obj[key].is<bool>()) {
-        return std::nullopt;
-    }
-    return _obj[key].as<bool>();
-}
-
 bool ArduinoJsonParser::parseJsonArray(const std::string& jsonString, 
                                      std::function<bool(ArduinoJson::JsonObjectConst)> elementProcessor) {
     DynamicJsonDocument doc(16384);

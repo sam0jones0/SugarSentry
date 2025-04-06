@@ -7,7 +7,6 @@
 #include <ArduinoJson.h>
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
-#include "i_json_value.h"
 
 /**
  * @file glucose_reading.h
@@ -34,8 +33,10 @@ public:
      *
      * @param json The JSON value containing glucose reading data
      * @throws std::runtime_error if required fields are missing or invalid
+     * 
+     * NOTE: Temporarily commented out due to IJsonValue removal. Will be fixed in next prompt.
      */
-    explicit GlucoseReading(const IJsonValue& json);
+    // explicit GlucoseReading(const IJsonValue& json);
 
     /**
      * @brief Constructs a GlucoseReading directly from an ArduinoJson object.

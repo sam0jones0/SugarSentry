@@ -1,3 +1,9 @@
+Task 38
+
+Removed IJsonValue interface, cleaned up related code, and temporarily commented out affected constructors and tests.
+
+----
+
 Task 37
 
 Removed unused parseArray method from IJsonParser interface, implementation, mock, and tests. Fixed code duplication in arduino_json_parser.cpp.
