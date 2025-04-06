@@ -1,3 +1,9 @@
+Task 35
+
+Removed unused JsonGlucoseReadingParser::parseJsonObject private helper method that became redundant after previous callback-based refactoring. All tests passing.
+
+----
+
 Task 34
 
 Changed ArduinoJsonParser::parseJsonArray to use DynamicJsonDocument(16384) instead of StaticJsonDocument for more efficient memory usage. All tests passing.

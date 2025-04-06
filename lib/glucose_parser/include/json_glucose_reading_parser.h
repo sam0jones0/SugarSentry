@@ -30,13 +30,6 @@ public:
 private:
     std::shared_ptr<IJsonParser> _jsonParser;
 
-    /**
-     * @brief Parse a single JSON object into a GlucoseReading
-     *
-     * @param jsonObject String containing a single JSON object
-     * @return std::optional<GlucoseReading> The parsed reading if successful
-     */
-    std::optional<GlucoseReading> parseJsonObject(const std::string &jsonObject);
 };
 
 #endif // JSON_GLUCOSE_READING_PARSER_H

@@ -44,20 +44,3 @@ std::vector<GlucoseReading> JsonGlucoseReadingParser::parse(const std::string &r
 
     return readings;
 }
-
-std::optional<GlucoseReading> JsonGlucoseReadingParser::parseJsonObject(const std::string &jsonObject)
-{
-    auto obj = _jsonParser->parseObject(jsonObject);
-    if (!obj) {
-        DEBUG_PRINT("Failed to parse JSON object");
-        return std::nullopt;
-    }
-
-    try {
-        return GlucoseReading(*obj);
-    } catch (const std::exception& e) {
-        DEBUG_PRINT("Failed to create GlucoseReading: ");
-        DEBUG_PRINT(e.what());
-        return std::nullopt;
-    }
-}
