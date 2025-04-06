@@ -11,50 +11,6 @@ protected:
 };
 
 /**
- * Test Case 1: Valid input (all fields present)
- * Disabled temporarily due to IJsonValue removal
- */
-/* 
-TEST_F(GlucoseReadingTest, ConstructorWithValidJson) {
-    // This test used MockJsonValue which has been removed
-    // Will be fixed in the next prompt
-}
-*/
-
-/**
- * Test Case 2: Value field is missing
- * Disabled temporarily due to IJsonValue removal
- */
-/* 
-TEST_F(GlucoseReadingTest, ConstructorThrowsWhenValueFieldMissing) {
-    // This test used MockJsonValue which has been removed
-    // Will be fixed in the next prompt
-}
-*/
-
-/**
- * Test Case 3: Trend field is missing
- * Disabled temporarily due to IJsonValue removal
- */
-/* 
-TEST_F(GlucoseReadingTest, ConstructorThrowsWhenTrendFieldMissing) {
-    // This test used MockJsonValue which has been removed
-    // Will be fixed in the next prompt
-}
-*/
-
-/**
- * Test Case 4: WT (timestamp) field is missing
- * Disabled temporarily due to IJsonValue removal
- */
-/* 
-TEST_F(GlucoseReadingTest, ConstructorThrowsWhenWTFieldMissing) {
-    // This test used MockJsonValue which has been removed
-    // Will be fixed in the next prompt
-}
-*/
-
-/**
  * Test Case 5: Valid direct ArduinoJson constructor
  */
 TEST_F(GlucoseReadingTest, ArduinoJsonConstructorWithValidJson) {

@@ -1,3 +1,9 @@
+Task 39
+
+Removed GlucoseReading(const IJsonValue&) constructor and corresponding tests, with all tests passing.
+
+----
+
 Task 38: Removed the `IJsonValue` interface and related code/tests.
 
 ----

@@ -29,16 +29,6 @@ public:
     GlucoseReading(uint16_t value, const std::string& trend, const std::string& timestamp);
 
     /**
-     * @brief Constructs a GlucoseReading from a JSON value.
-     *
-     * @param json The JSON value containing glucose reading data
-     * @throws std::runtime_error if required fields are missing or invalid
-     * 
-     * NOTE: Temporarily commented out due to IJsonValue removal. Will be fixed in next prompt.
-     */
-    // explicit GlucoseReading(const IJsonValue& json);
-
-    /**
      * @brief Constructs a GlucoseReading directly from an ArduinoJson object.
      *
      * @param obj The JSON object containing glucose reading data
