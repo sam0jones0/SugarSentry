@@ -29,24 +29,6 @@ std::optional<bool> ArduinoJsonValue::getBool(const std::string& key) const {
     return _obj[key].as<bool>();
 }
 
-std::shared_ptr<IJsonValue> ArduinoJsonParser::parseObject(const std::string& jsonString) {
-    auto doc = std::make_unique<JsonDocument>();
-    DeserializationError error = deserializeJson(*doc, jsonString);
-
-    if (error) {
-        DEBUG_PRINT("Failed to parse JSON object: ");
-        DEBUG_PRINT(error.c_str());
-        return nullptr;
-    }
-
-    if (!doc->is<JsonObject>()) {
-        DEBUG_PRINT("JSON is not an object");
-        return nullptr;
-    }
-
-    return std::make_shared<ArduinoJsonValue>(*doc);
-}
-
 std::vector<std::shared_ptr<IJsonValue>> ArduinoJsonParser::parseArray(const std::string& jsonString) {
     std::vector<std::shared_ptr<IJsonValue>> result;
     auto arrayDoc = std::make_unique<JsonDocument>();

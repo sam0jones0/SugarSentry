@@ -1,3 +1,9 @@
+Task 36
+
+Removed parseObject method from IJsonParser interface, its implementation, mock, and tests as it became redundant after previous callback-based refactoring.
+
+----
+
 Task 35
 
 Removed unused JsonGlucoseReadingParser::parseJsonObject private helper method that became redundant after previous callback-based refactoring. All tests passing.
