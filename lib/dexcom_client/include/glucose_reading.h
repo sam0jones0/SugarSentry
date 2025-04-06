@@ -3,11 +3,9 @@
 
 #include <cstdint>
 #include <ctime>
-#include <memory>
 #include <ArduinoJson.h>
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
-#include "i_json_value.h"
 
 /**
  * @file glucose_reading.h
@@ -28,14 +26,6 @@ public:
      * @brief Constructs a GlucoseReading from raw values.
      */
     GlucoseReading(uint16_t value, const std::string& trend, const std::string& timestamp);
-
-    /**
-     * @brief Constructs a GlucoseReading from a JSON value.
-     *
-     * @param json The JSON value containing glucose reading data
-     * @throws std::runtime_error if required fields are missing or invalid
-     */
-    explicit GlucoseReading(const IJsonValue& json);
 
     /**
      * @brief Constructs a GlucoseReading directly from an ArduinoJson object.
