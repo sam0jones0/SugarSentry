@@ -1,3 +1,9 @@
+Task 40
+
+Successfully cleaned up unnecessary #include directives from multiple files after the removal of IJsonValue, ArduinoJsonValue, and related functionality. Specifically:
+
+----
+
 Task 39
 
 Removed GlucoseReading(const IJsonValue&) constructor and corresponding tests, with all tests passing.

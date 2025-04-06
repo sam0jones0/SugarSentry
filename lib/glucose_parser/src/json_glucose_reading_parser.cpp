@@ -1,4 +1,6 @@
 #include "json_glucose_reading_parser.h"
+#include "debug_print.h"
+#include "dexcom_constants.h"
 
 JsonGlucoseReadingParser::JsonGlucoseReadingParser(std::shared_ptr<IJsonParser> jsonParser)
     : _jsonParser(std::move(jsonParser))

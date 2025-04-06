@@ -1,8 +1,6 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include <vector>
-#include <memory>
 #include <string>
 #include "i_json_parser.h"
 

@@ -3,9 +3,7 @@
 
 #include "i_glucose_reading_parser.h"
 #include "i_json_parser.h"
-#include "debug_print.h"
-#include "dexcom_errors.h"
-#include "dexcom_constants.h"
+#include <memory>
 
 class JsonGlucoseReadingParser : public IGlucoseReadingParser
 {

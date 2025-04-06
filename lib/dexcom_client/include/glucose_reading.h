@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <ctime>
-#include <memory>
 #include <ArduinoJson.h>
 #include "dexcom_constants.h"
 #include "dexcom_utils.h"
