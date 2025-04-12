@@ -1,0 +1,16 @@
+{
+  "name": "glucose_parser",
+  "version": "0.1.0",
+  "description": "Parses glucose readings from various formats.",
+  "authors": [
+    {
+      "name": "SugarSentry Contributor",
+      "maintainer": true
+    }
+  ],
+  "dependencies": {
+    "dexcom_client": "*"
+  },
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

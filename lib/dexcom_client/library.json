@@ -1,0 +1,16 @@
+{
+  "name": "dexcom_client",
+  "version": "0.1.0",
+  "description": "Client library for interacting with Dexcom services.",
+  "authors": [
+    {
+      "name": "SugarSentry Contributor",
+      "maintainer": true
+    }
+  ],
+  "dependencies": {
+    "bblanchon/ArduinoJson": "^6.18.5"
+  },
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}
