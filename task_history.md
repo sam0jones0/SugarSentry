@@ -1,3 +1,9 @@
+Task 45
+
+Refactor `readResponse` to Read Only Headers
+
+----
+
 Task 44
 
 refactor: Improve HTTP request logging in SecureHttpClient

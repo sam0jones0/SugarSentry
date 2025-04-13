@@ -98,10 +98,9 @@ HttpResponse SecureHttpClient::post(const std::string &url,
 RawHttpResponse SecureHttpClient::readResponse()
 {
     RawHttpResponse response;
-    bool headers_complete = false;
 
     // Read headers line by line
-    while (_client->connected() && !headers_complete)
+    while (_client->connected())
     {
         std::string line = _client->readStringUntil('\n');
         response.headersStr += line;
@@ -109,51 +108,18 @@ RawHttpResponse SecureHttpClient::readResponse()
         // Check for empty line that separates headers from body
         if (line == "\r" || line == "\r\n")
         {
-            headers_complete = true;
+            break; // Headers complete, don't read the body
         }
 
         // Prevent infinite loop if no proper header termination
-        if (response.headersStr.length() > 16384)
-        { // 16KB max header size
+        if (response.headersStr.length() > 8192)
+        { // 8KB max header size
             break;
         }
     }
 
-    // Read body if there's data available
-    int content_length = 0;
-    // Parse the Content-Length header from headersStr
-    auto it = response.headersStr.find("Content-Length: ");
-    if (it != std::string::npos)
-    {
-        size_t end = response.headersStr.find("\r\n", it);
-        if (end != std::string::npos)
-        {
-            content_length = std::stoi(response.headersStr.substr(it + 16, end - (it + 16)));
-        }
-    }
-
-    // Read exact content length if specified
-    if (content_length > 0)
-    {
-        response.bodyStr.reserve(content_length); // Pre-allocate body buffer
-        
-        while (_client->available() && content_length > 0)
-        {
-            char c = static_cast<char>(_client->read());
-            response.bodyStr += c;
-            content_length--;
-        }
-    }
-    else
-    {
-        // Read any remaining data
-        while (_client->available())
-        {
-            char c = static_cast<char>(_client->read());
-            response.bodyStr += c;
-        }
-    }
-
+    // Leave bodyStr empty - don't attempt to read the body
+    
     return response;
 }
 

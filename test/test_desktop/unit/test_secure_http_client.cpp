@@ -121,9 +121,6 @@ TEST_F(SecureHttpClientTest, Get_Success)
         {"Accept", "application/json"}
     };
 
-    // Store the complete body content we want to receive
-    const std::string body = "{\"key\":\"value\"}";
-
     // Setup connection
     ON_CALL(*mock_secure_client_, connect(testing::_, port))
         .WillByDefault(testing::Return(true));
@@ -139,33 +136,21 @@ TEST_F(SecureHttpClientTest, Get_Success)
     EXPECT_CALL(*mock_secure_client_, println("Accept: application/json")).Times(1);
     EXPECT_CALL(*mock_secure_client_, println()).Times(1);
 
-    // Setup complete HTTP response in strict sequence
+    // Setup HTTP response headers in strict sequence
     {
         testing::InSequence seq;
         
-        // First return status line and headers
+        // Return status line and headers only
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("HTTP/1.1 200 OK\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("Content-Type: application/json\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
-            .WillOnce(testing::Return("Content-Length: " + std::to_string(body.length()) + "\r\n"));
+            .WillOnce(testing::Return("Content-Length: 15\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("\r\n"));
         
-        // Simulate body reading loop with proper available()/read() sequence
-        size_t remaining_bytes = body.length();
-        for (char c : body) {
-            EXPECT_CALL(*mock_secure_client_, available())
-                .WillOnce(testing::Return(remaining_bytes)); // Report remaining bytes
-            EXPECT_CALL(*mock_secure_client_, read())
-                .WillOnce(testing::Return(static_cast<int>(c))); // Return next char
-            remaining_bytes--; // Decrement remaining count
-        }
-        
-        // After body is read, available should return 0
-        EXPECT_CALL(*mock_secure_client_, available())
-            .WillRepeatedly(testing::Return(0)); // No more data
+        // No body reading expectations as readResponse no longer reads the body
     }
 
     // Call the method under test
@@ -173,7 +158,7 @@ TEST_F(SecureHttpClientTest, Get_Success)
 
     // Verify response
     EXPECT_EQ(200, response.statusCode);
-    EXPECT_EQ(body, response.body);
+    EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("application/json", response.headers["Content-Type"]);
 }
 
@@ -187,9 +172,6 @@ TEST_F(SecureHttpClientTest, Post_Success)
         {"Content-Type", "application/json"}
     };
     
-    // Complete response body we expect
-    const std::string responseBody = "{\"id\":123,\"status\":\"created\"}";
-
     // Setup connection
     ON_CALL(*mock_secure_client_, connect(testing::_, port))
         .WillByDefault(testing::Return(true));
@@ -207,33 +189,21 @@ TEST_F(SecureHttpClientTest, Post_Success)
     EXPECT_CALL(*mock_secure_client_, println()).Times(1);
     EXPECT_CALL(*mock_secure_client_, println(requestBody)).Times(1);
 
-    // Setup complete HTTP response in strict sequence
+    // Setup HTTP response headers in strict sequence
     {
         testing::InSequence seq;
         
-        // First return status line and headers
+        // Return status line and headers only
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("HTTP/1.1 201 Created\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("Content-Type: application/json\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
-            .WillOnce(testing::Return("Content-Length: " + std::to_string(responseBody.length()) + "\r\n"));
+            .WillOnce(testing::Return("Content-Length: 31\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("\r\n"));
         
-        // Simulate body reading loop with proper available()/read() sequence
-        size_t remaining_bytes = responseBody.length();
-        for (char c : responseBody) {
-            EXPECT_CALL(*mock_secure_client_, available())
-                .WillOnce(testing::Return(remaining_bytes)); // Report remaining bytes
-            EXPECT_CALL(*mock_secure_client_, read())
-                .WillOnce(testing::Return(static_cast<int>(c))); // Return next char
-            remaining_bytes--; // Decrement remaining count
-        }
-        
-        // After body is read, available should return 0
-        EXPECT_CALL(*mock_secure_client_, available())
-            .WillRepeatedly(testing::Return(0)); // No more data
+        // No body reading expectations as readResponse no longer reads the body
     }
 
     // Call the method under test
@@ -241,7 +211,7 @@ TEST_F(SecureHttpClientTest, Post_Success)
 
     // Verify response
     EXPECT_EQ(201, response.statusCode);
-    EXPECT_EQ(responseBody, response.body);
+    EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("application/json", response.headers["Content-Type"]);
 }
 
@@ -310,12 +280,11 @@ TEST_F(SecureHttpClientTest, GetNon200Response)
     EXPECT_CALL(*mock_secure_client_, println("Host: " + host)).Times(1);
     EXPECT_CALL(*mock_secure_client_, println()).Times(1);
 
-    // Setup complete HTTP response in strict sequence
-    std::string responseBody = "Not Found";
+    // Setup HTTP response headers in strict sequence
     {
         testing::InSequence seq;
         
-        // First return status line and headers
+        // Return status line and headers only
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("HTTP/1.1 404 Not Found\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
@@ -325,27 +294,15 @@ TEST_F(SecureHttpClientTest, GetNon200Response)
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("\r\n"));
         
-        // Simulate body reading loop with proper available()/read() sequence
-        size_t remaining_bytes = responseBody.length();
-        for (char c : responseBody) {
-            EXPECT_CALL(*mock_secure_client_, available())
-                .WillOnce(testing::Return(remaining_bytes)); // Report remaining bytes
-            EXPECT_CALL(*mock_secure_client_, read())
-                .WillOnce(testing::Return(static_cast<int>(c))); // Return next char
-            remaining_bytes--; // Decrement remaining count
-        }
-        
-        // After body is read, available should return 0
-        EXPECT_CALL(*mock_secure_client_, available())
-            .WillRepeatedly(testing::Return(0)); // No more data
+        // No body reading expectations as readResponse no longer reads the body
     }
 
     // Call the method under test
     HttpResponse response = http_client_->get(url, headers);
 
-    // Verify response has correct status code, content type and body
+    // Verify response has correct status code and content type
     EXPECT_EQ(404, response.statusCode);
-    EXPECT_EQ("Not Found", response.body);
+    EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("text/plain", response.headers["Content-Type"]);
 }
 
@@ -377,35 +334,21 @@ TEST_F(SecureHttpClientTest, PostNon200Response)
     EXPECT_CALL(*mock_secure_client_, println()).Times(1);
     EXPECT_CALL(*mock_secure_client_, println(requestBody)).Times(1);
 
-    // Setup complete HTTP response in strict sequence
-    const std::string errorMessage = "Internal server error";
-    const std::string responseBody = "{\"error\":\"" + errorMessage + "\"}";
+    // Setup HTTP response headers in strict sequence
     {
         testing::InSequence seq;
         
-        // First return status line and headers
+        // Return status line and headers only
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("HTTP/1.1 500 Internal Server Error\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("Content-Type: application/json\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
-            .WillOnce(testing::Return("Content-Length: " + std::to_string(responseBody.length()) + "\r\n"));
+            .WillOnce(testing::Return("Content-Length: 38\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("\r\n"));
         
-        // Simulate body reading loop with proper available()/read() sequence
-        size_t remaining_bytes = responseBody.length();
-        for (char c : responseBody) {
-            EXPECT_CALL(*mock_secure_client_, available())
-                .WillOnce(testing::Return(remaining_bytes)); // Report remaining bytes
-            EXPECT_CALL(*mock_secure_client_, read())
-                .WillOnce(testing::Return(static_cast<int>(c))); // Return next char
-            remaining_bytes--; // Decrement remaining count
-        }
-        
-        // After body is read, available should return 0
-        EXPECT_CALL(*mock_secure_client_, available())
-            .WillRepeatedly(testing::Return(0)); // No more data
+        // No body reading expectations as readResponse no longer reads the body
     }
 
     // Call the method under test
@@ -413,11 +356,7 @@ TEST_F(SecureHttpClientTest, PostNon200Response)
 
     // Verify response
     EXPECT_EQ(500, response.statusCode);
-    
-    // The response body seems to have extra characters at the end, so just verify it contains our expected string
-    // This is more robust than an exact match which might fail due to implementation details
-    EXPECT_NE(std::string::npos, response.body.find(responseBody));
-    
+    EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("application/json", response.headers["Content-Type"]);
 }
 
@@ -443,11 +382,11 @@ TEST_F(SecureHttpClientTest, ResponseWithEmptyBody)
     EXPECT_CALL(*mock_secure_client_, println("Host: " + host)).Times(1);
     EXPECT_CALL(*mock_secure_client_, println()).Times(1);
 
-    // Setup complete HTTP response in strict sequence
+    // Setup HTTP response headers in strict sequence
     {
         testing::InSequence seq;
         
-        // First return status line and headers
+        // Return status line and headers only
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("HTTP/1.1 200 OK\r\n"));
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
@@ -457,9 +396,7 @@ TEST_F(SecureHttpClientTest, ResponseWithEmptyBody)
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("\r\n"));
         
-        // No body content available to read (empty body)
-        EXPECT_CALL(*mock_secure_client_, available())
-            .WillOnce(testing::Return(0));
+        // No body reading expectations as readResponse no longer reads the body
     }
 
     // Call the method under test
@@ -493,7 +430,7 @@ TEST_F(SecureHttpClientTest, MalformedStatusLine)
     EXPECT_CALL(*mock_secure_client_, println("Host: " + host)).Times(1);
     EXPECT_CALL(*mock_secure_client_, println()).Times(1);
 
-    // Setup complete HTTP response in strict sequence
+    // Setup HTTP response headers in strict sequence
     {
         testing::InSequence seq;
         
@@ -508,9 +445,7 @@ TEST_F(SecureHttpClientTest, MalformedStatusLine)
         EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
             .WillOnce(testing::Return("\r\n"));
         
-        // No body content available to read
-        EXPECT_CALL(*mock_secure_client_, available())
-            .WillOnce(testing::Return(0));
+        // No body reading expectations as readResponse no longer reads the body
     }
 
     // Call the method under test
