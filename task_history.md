@@ -1,3 +1,9 @@
+Task 44
+
+refactor: Improve HTTP request logging in SecureHttpClient
+
+----
+
 Task 43
 
 refactor: Separate status line and headers parsing in SecureHttpClient response handling

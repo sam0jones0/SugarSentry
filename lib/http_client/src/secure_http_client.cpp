@@ -44,21 +44,27 @@ HttpResponse SecureHttpClient::send(const HttpRequest &request)
     }
 
     // Write request line
+    DEBUG_PRINTF(">> %s %s HTTP/1.1\n", request.method.c_str(), request.url.c_str());
     _client->println(request.method + " " + request.url + " HTTP/1.1");
 
     // Write headers
+    DEBUG_PRINTF(">> Host: %s\n", _host.c_str());
     _client->println("Host: " + _host);
     writeHeaders(request.headers);
 
     // Write body if present
     if (request.body)
     {
+        DEBUG_PRINTF(">> Content-Length: %zu\n", request.body->length());
         _client->println("Content-Length: " + std::to_string(request.body->length()));
+        DEBUG_PRINT(">> [blank line]");
         _client->println();
+        DEBUG_PRINTF(">> Body:\n%s\n", request.body->c_str());
         _client->println(*request.body);
     }
     else
     {
+        DEBUG_PRINT(">> [blank line]");
         _client->println();
     }
 
@@ -220,6 +226,7 @@ void SecureHttpClient::writeHeaders(const std::map<std::string, std::string> &he
 {
     for (const auto &[key, value] : headers)
     {
+        DEBUG_PRINTF(">> %s: %s\n", key.c_str(), value.c_str());
         _client->println(key + ": " + value);
     }
 }
