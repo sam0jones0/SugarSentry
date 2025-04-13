@@ -1,3 +1,9 @@
+Task 43
+
+refactor: Separate status line and headers parsing in SecureHttpClient response handling
+
+----
+
 Task 42
 
 Refactored SecureHttpClient::readResponse to separate HTTP headers and body processing. The method now returns a RawHttpResponse struct containing distinct headersStr and bodyStr fields instead of a combined string. This separation maintains the original header parsing approach (line-by-line) that worked in the previous implementation, while ensuring the body can be accurately extracted after the header/body boundary. The parseResponse method was updated to work with this new structure, allowing for more precise HTTP response handling. Tests failing for the time being.
