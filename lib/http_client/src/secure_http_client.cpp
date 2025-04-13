@@ -126,65 +126,57 @@ RawHttpResponse SecureHttpClient::readResponse()
 HttpResponse SecureHttpClient::parseResponse(const RawHttpResponse &rawResponse)
 {
     HttpResponse response;
-    
-    // Parse status line and headers
-    size_t pos = 0;
-    size_t end_line = rawResponse.headersStr.find("\r\n", pos);
-    
-    // Extract status line (first line in headers)
-    if (end_line != std::string::npos) {
-        std::string status_line = rawResponse.headersStr.substr(pos, end_line - pos);
-        
-        // Parse status code from status line (typically "HTTP/1.1 200 OK")
-        if (status_line.length() > 12) {
-            try {
-                response.statusCode = std::stoi(status_line.substr(9, 3));
-            } catch (...) {
-                response.statusCode = 500; // Default to 500 on parsing error
-            }
-        } else {
-            response.statusCode = 500; // Default to 500 for malformed status line
+    std::istringstream headersStream(rawResponse.headersStr);
+    std::string line;
+
+    // Parse Status Line
+    if (std::getline(headersStream, line) && line.length() > 12) {
+        // Remove trailing \r if present
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        try {
+            response.statusCode = std::stoi(line.substr(9, 3));
+        } catch (...) {
+            response.statusCode = 500; // Error parsing status code
         }
-        
-        pos = end_line + 2; // Move past this line and the \r\n
     } else {
-        response.statusCode = 500; // Default to 500 for completely malformed response
-        pos = rawResponse.headersStr.length(); // Skip header parsing
+        response.statusCode = 500; // Malformed status line
     }
-    
-    // Parse headers (each line until empty line)
-    while (pos < rawResponse.headersStr.length()) {
-        end_line = rawResponse.headersStr.find("\r\n", pos);
-        if (end_line == std::string::npos) {
-            break; // No more lines
-        }
-        
-        std::string line = rawResponse.headersStr.substr(pos, end_line - pos);
-        pos = end_line + 2; // Move past this line and the \r\n
-        
-        // Empty line indicates end of headers
-        if (line.empty()) {
-            break;
-        }
-        
-        // Parse header: "Key: Value"
+
+    // Parse Headers
+    while (std::getline(headersStream, line)) {
+        // Remove trailing \r if present
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+
+        // Stop if we hit the empty line separating headers from body
+        if (line.empty()) break;
+
         size_t colon_pos = line.find(':');
         if (colon_pos != std::string::npos) {
             std::string key = line.substr(0, colon_pos);
-            // Skip the ": " after the colon - at least one space is expected
             size_t value_start = colon_pos + 1;
-            while (value_start < line.length() && line[value_start] == ' ') {
+            // Trim leading whitespace from value
+            while (value_start < line.length() && isspace(line[value_start])) {
                 value_start++;
             }
             std::string value = line.substr(value_start);
-            
+
+            // Store header
             response.headers[key] = value;
+
+            // Check for Content-Length
+            if (key == "Content-Length") {
+                try {
+                    response.contentLength = std::stoi(value);
+                } catch(...) {
+                    response.contentLength = 0; // Error parsing length
+                }
+            }
         }
     }
 
-    // The body is directly from rawResponse.bodyStr
-    response.body = rawResponse.bodyStr;
-    
+    // Body is NOT parsed here
+    response.body = "";
+
     return response;
 }
 

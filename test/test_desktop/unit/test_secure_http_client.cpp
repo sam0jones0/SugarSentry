@@ -160,6 +160,7 @@ TEST_F(SecureHttpClientTest, Get_Success)
     EXPECT_EQ(200, response.statusCode);
     EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("application/json", response.headers["Content-Type"]);
+    EXPECT_EQ(15, response.contentLength); // Verify Content-Length is parsed correctly
 }
 
 TEST_F(SecureHttpClientTest, Post_Success)
@@ -213,6 +214,7 @@ TEST_F(SecureHttpClientTest, Post_Success)
     EXPECT_EQ(201, response.statusCode);
     EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("application/json", response.headers["Content-Type"]);
+    EXPECT_EQ(31, response.contentLength); // Verify Content-Length is parsed correctly
 }
 
 // Test Case 1: Connection Failure
@@ -304,6 +306,7 @@ TEST_F(SecureHttpClientTest, GetNon200Response)
     EXPECT_EQ(404, response.statusCode);
     EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("text/plain", response.headers["Content-Type"]);
+    EXPECT_EQ(9, response.contentLength); // Verify Content-Length is parsed correctly
 }
 
 // Test Case 3: POST with 500 response
@@ -358,6 +361,7 @@ TEST_F(SecureHttpClientTest, PostNon200Response)
     EXPECT_EQ(500, response.statusCode);
     EXPECT_EQ("", response.body); // Body should be empty as readResponse no longer reads it
     EXPECT_EQ("application/json", response.headers["Content-Type"]);
+    EXPECT_EQ(38, response.contentLength); // Verify Content-Length is parsed correctly
 }
 
 // Test Case 4: Response with empty body
@@ -406,6 +410,7 @@ TEST_F(SecureHttpClientTest, ResponseWithEmptyBody)
     EXPECT_EQ(200, response.statusCode);
     EXPECT_EQ("", response.body);
     EXPECT_EQ("text/plain", response.headers["Content-Type"]);
+    EXPECT_EQ(0, response.contentLength); // Verify Content-Length is parsed correctly
 }
 
 // Test Case 5: Malformed status line

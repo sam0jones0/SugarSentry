@@ -2,6 +2,20 @@ Task 45
 
 Refactor `readResponse` to Read Only Headers
 
+I've successfully refactored the SecureHttpClient::parseResponse method to work with the updated readResponse method from the previous task. The changes include:
+
+Added a contentLength field to the HttpResponse struct in i_http_client.h to store Content-Length header value
+Completely refactored the parseResponse method to:
+Use std::istringstream to process headers line-by-line
+Extract the status code from the first line
+Parse headers including the Content-Length value when present
+Leave the response body empty (as specified in the task)
+Updated all the tests in test_secure_http_client.cpp to verify:
+The status code is correctly parsed
+Headers are extracted properly
+Content-Length is stored in the new field
+The body remains empty
+
 ----
 
 Task 44
