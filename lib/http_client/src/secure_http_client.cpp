@@ -62,7 +62,8 @@ HttpResponse SecureHttpClient::send(const HttpRequest &request)
         _client->println();
     }
 
-    return parseResponse(readResponse());
+    RawHttpResponse rawResponse = readResponse();
+    return parseResponse(rawResponse);
 }
 
 HttpResponse SecureHttpClient::get(const std::string &url,
@@ -88,16 +89,16 @@ HttpResponse SecureHttpClient::post(const std::string &url,
     return send(request);
 }
 
-std::string SecureHttpClient::readResponse()
+RawHttpResponse SecureHttpClient::readResponse()
 {
-    std::string response;
+    RawHttpResponse response;
     bool headers_complete = false;
 
-    // Read headers
+    // Read headers line by line
     while (_client->connected() && !headers_complete)
     {
         std::string line = _client->readStringUntil('\n');
-        response += line;
+        response.headersStr += line;
 
         // Check for empty line that separates headers from body
         if (line == "\r" || line == "\r\n")
@@ -106,7 +107,7 @@ std::string SecureHttpClient::readResponse()
         }
 
         // Prevent infinite loop if no proper header termination
-        if (response.length() > 16384)
+        if (response.headersStr.length() > 16384)
         { // 16KB max header size
             break;
         }
@@ -114,23 +115,26 @@ std::string SecureHttpClient::readResponse()
 
     // Read body if there's data available
     int content_length = 0;
-    auto it = response.find("Content-Length: ");
+    // Parse the Content-Length header from headersStr
+    auto it = response.headersStr.find("Content-Length: ");
     if (it != std::string::npos)
     {
-        size_t end = response.find("\r\n", it);
+        size_t end = response.headersStr.find("\r\n", it);
         if (end != std::string::npos)
         {
-            content_length = std::stoi(response.substr(it + 16, end - (it + 16)));
+            content_length = std::stoi(response.headersStr.substr(it + 16, end - (it + 16)));
         }
     }
 
     // Read exact content length if specified
     if (content_length > 0)
     {
+        response.bodyStr.reserve(content_length); // Pre-allocate body buffer
+        
         while (_client->available() && content_length > 0)
         {
             char c = static_cast<char>(_client->read());
-            response += c;
+            response.bodyStr += c;
             content_length--;
         }
     }
@@ -140,21 +144,21 @@ std::string SecureHttpClient::readResponse()
         while (_client->available())
         {
             char c = static_cast<char>(_client->read());
-            response += c;
+            response.bodyStr += c;
         }
     }
 
     return response;
 }
 
-HttpResponse SecureHttpClient::parseResponse(const std::string &rawResponse)
+HttpResponse SecureHttpClient::parseResponse(const RawHttpResponse &rawResponse)
 {
     HttpResponse response;
-    std::istringstream responseStream(rawResponse);
+    std::istringstream headerStream(rawResponse.headersStr);
     std::string line;
 
     // Parse status line
-    if (std::getline(responseStream, line))
+    if (std::getline(headerStream, line))
     {
         if (line.length() > 12)
         {
@@ -167,7 +171,7 @@ HttpResponse SecureHttpClient::parseResponse(const std::string &rawResponse)
     }
 
     // Parse headers
-    while (std::getline(responseStream, line) && line != "\r")
+    while (std::getline(headerStream, line) && line != "\r")
     {
         size_t colonPos = line.find(':');
         if (colonPos != std::string::npos)
@@ -182,24 +186,9 @@ HttpResponse SecureHttpClient::parseResponse(const std::string &rawResponse)
         }
     }
 
-    // Parse body
-    std::string body;
-    while (std::getline(responseStream, line))
-    {
-        body += line;
-        if (!responseStream.eof())
-        {
-            body += "\n";
-        }
-    }
-
-    // Trim trailing whitespace from body
-    while (!body.empty() && (body.back() == '\n' || body.back() == '\r' || body.back() == ' '))
-    {
-        body.pop_back();
-    }
-
-    response.body = body;
+    // The body is already correctly separated
+    response.body = rawResponse.bodyStr;
+    
     return response;
 }
 
