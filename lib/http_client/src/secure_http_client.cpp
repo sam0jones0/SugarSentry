@@ -68,8 +68,39 @@ HttpResponse SecureHttpClient::send(const HttpRequest &request)
         _client->println();
     }
 
-    RawHttpResponse rawResponse = readResponse();
-    return parseResponse(rawResponse);
+    RawHttpResponse rawResponse = readResponse(); // Reads only headers now
+    HttpResponse response = parseResponse(rawResponse); // Parses headers, gets contentLength
+
+    // Read the body based on Content-Length
+    response.body.clear(); // Ensure body starts empty
+    if (response.contentLength > 0) {
+        response.body.reserve(response.contentLength);
+        for (int i = 0; i < response.contentLength; ++i) {
+            // Add timeout check within the loop if necessary
+            while (_client->available() == 0 && _client->connected()) {
+                // Optional: Add a small delay or timeout mechanism here
+                PLATFORM_DELAY(1); // Small delay to wait for data
+            }
+            if (_client->available() > 0) {
+                response.body += (char)_client->read();
+            } else {
+                // Connection closed or timeout before full body read
+                DEBUG_PRINT("Error reading response body: connection issue or timeout");
+                // Optionally set an error status code or return partial body
+                response.statusCode = 504; // Gateway Timeout (example)
+                break;
+            }
+        }
+    } else if (response.contentLength == 0) {
+        // Body is intentionally empty
+    } else { // Content-Length was missing or invalid
+        // Read remaining data based on availability (less reliable)
+        while (_client->available() > 0) {
+            response.body += (char)_client->read();
+        }
+    }
+
+    return response;
 }
 
 HttpResponse SecureHttpClient::get(const std::string &url,
