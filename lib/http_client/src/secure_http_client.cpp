@@ -82,7 +82,13 @@ HttpResponse SecureHttpClient::send(const HttpRequest &request)
                 PLATFORM_DELAY(1); // Small delay to wait for data
             }
             if (_client->available() > 0) {
-                response.body += (char)_client->read();
+                int c = _client->read();
+                
+                if (c < 0) {
+                    break;
+                }
+                
+                response.body += (char)c;
             } else {
                 // Connection closed or timeout before full body read
                 DEBUG_PRINT("Error reading response body: connection issue or timeout");
