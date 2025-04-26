@@ -1,3 +1,39 @@
+Task 45
+
+Refactor `readResponse` to Read Only Headers
+
+I've successfully refactored the SecureHttpClient::parseResponse method to work with the updated readResponse method from the previous task. The changes include:
+
+Added a contentLength field to the HttpResponse struct in i_http_client.h to store Content-Length header value
+Completely refactored the parseResponse method to:
+Use std::istringstream to process headers line-by-line
+Extract the status code from the first line
+Parse headers including the Content-Length value when present
+Leave the response body empty (as specified in the task)
+Updated all the tests in test_secure_http_client.cpp to verify:
+The status code is correctly parsed
+Headers are extracted properly
+Content-Length is stored in the new field
+The body remains empty
+
+----
+
+Task 44
+
+refactor: Improve HTTP request logging in SecureHttpClient
+
+----
+
+Task 43
+
+refactor: Separate status line and headers parsing in SecureHttpClient response handling
+
+----
+
+Task 42
+
+Refactored SecureHttpClient::readResponse to separate HTTP headers and body processing. The method now returns a RawHttpResponse struct containing distinct headersStr and bodyStr fields instead of a combined string. This separation maintains the original header parsing approach (line-by-line) that worked in the previous implementation, while ensuring the body can be accurately extracted after the header/body boundary. The parseResponse method was updated to work with this new structure, allowing for more precise HTTP response handling. Tests failing for the time being.
+
 Task 41
 
 Removed unused static buffer size constant and JsonDocument type alias from ArduinoJsonParser header.

@@ -11,6 +11,7 @@ struct HttpResponse
     int statusCode;
     std::string body;
     std::map<std::string, std::string> headers;
+    int contentLength = 0; // Add this member
 };
 
 struct HttpRequest

@@ -44,25 +44,75 @@ HttpResponse SecureHttpClient::send(const HttpRequest &request)
     }
 
     // Write request line
+    DEBUG_PRINTF(">> %s %s HTTP/1.1\n", request.method.c_str(), request.url.c_str());
     _client->println(request.method + " " + request.url + " HTTP/1.1");
 
     // Write headers
+    DEBUG_PRINTF(">> Host: %s\n", _host.c_str());
     _client->println("Host: " + _host);
     writeHeaders(request.headers);
 
     // Write body if present
     if (request.body)
     {
+        DEBUG_PRINTF(">> Content-Length: %zu\n", request.body->length());
         _client->println("Content-Length: " + std::to_string(request.body->length()));
+        DEBUG_PRINT(">> [blank line]");
         _client->println();
+        DEBUG_PRINTF(">> Body:\n%s\n", request.body->c_str());
         _client->println(*request.body);
     }
     else
     {
+        DEBUG_PRINT(">> [blank line]");
         _client->println();
     }
 
-    return parseResponse(readResponse());
+    RawHttpResponse rawResponse = readResponse(); // Reads only headers now
+    HttpResponse response = parseResponse(rawResponse); // Parses headers, gets contentLength
+
+    // Read the body based on Content-Length
+    response.body.clear(); // Ensure body starts empty
+    if (response.contentLength > 0) {
+        response.body.reserve(response.contentLength);
+        size_t bytesRead = 0;
+        
+        // Read exactly contentLength bytes, no more no less
+        while (bytesRead < response.contentLength && _client->connected()) {
+            // Wait for data to be available
+            while (_client->available() == 0 && _client->connected()) {
+                // Optional: Add a small delay or timeout mechanism here
+                PLATFORM_DELAY(1); // Small delay to wait for data
+            }
+            
+            // Read a character when available
+            if (_client->available() > 0) {
+                int c = _client->read();
+                
+                if (c < 0) {
+                    break; // Error reading
+                }
+                
+                response.body += (char)c;
+                bytesRead++;
+            } else {
+                // Connection closed or timeout before full body read
+                DEBUG_PRINT("Error reading response body: connection issue or timeout");
+                // Optionally set an error status code or return partial body
+                response.statusCode = 504; // Gateway Timeout (example)
+                break;
+            }
+        }
+    } else if (response.contentLength == 0) {
+        // Body is intentionally empty
+    } else { // Content-Length was missing or invalid
+        // Read remaining data based on availability (less reliable)
+        while (_client->available() > 0) {
+            response.body += (char)_client->read();
+        }
+    }
+
+    return response;
 }
 
 HttpResponse SecureHttpClient::get(const std::string &url,
@@ -88,118 +138,88 @@ HttpResponse SecureHttpClient::post(const std::string &url,
     return send(request);
 }
 
-std::string SecureHttpClient::readResponse()
+RawHttpResponse SecureHttpClient::readResponse()
 {
-    std::string response;
-    bool headers_complete = false;
+    RawHttpResponse response;
 
-    // Read headers
-    while (_client->connected() && !headers_complete)
+    // Read headers line by line
+    while (_client->connected())
     {
         std::string line = _client->readStringUntil('\n');
-        response += line;
+        response.headersStr += line;
 
         // Check for empty line that separates headers from body
         if (line == "\r" || line == "\r\n")
         {
-            headers_complete = true;
+            break; // Headers complete, don't read the body
         }
 
         // Prevent infinite loop if no proper header termination
-        if (response.length() > 16384)
-        { // 16KB max header size
+        if (response.headersStr.length() > 8192)
+        { // 8KB max header size
             break;
         }
     }
 
-    // Read body if there's data available
-    int content_length = 0;
-    auto it = response.find("Content-Length: ");
-    if (it != std::string::npos)
-    {
-        size_t end = response.find("\r\n", it);
-        if (end != std::string::npos)
-        {
-            content_length = std::stoi(response.substr(it + 16, end - (it + 16)));
-        }
-    }
-
-    // Read exact content length if specified
-    if (content_length > 0)
-    {
-        while (_client->available() && content_length > 0)
-        {
-            char c = static_cast<char>(_client->read());
-            response += c;
-            content_length--;
-        }
-    }
-    else
-    {
-        // Read any remaining data
-        while (_client->available())
-        {
-            char c = static_cast<char>(_client->read());
-            response += c;
-        }
-    }
-
+    // Leave bodyStr empty - don't attempt to read the body
+    
     return response;
 }
 
-HttpResponse SecureHttpClient::parseResponse(const std::string &rawResponse)
+HttpResponse SecureHttpClient::parseResponse(const RawHttpResponse &rawResponse)
 {
     HttpResponse response;
-    std::istringstream responseStream(rawResponse);
+    std::istringstream headersStream(rawResponse.headersStr);
     std::string line;
 
-    // Parse status line
-    if (std::getline(responseStream, line))
-    {
-        if (line.length() > 12)
-        {
+    // Parse Status Line
+    if (std::getline(headersStream, line) && line.length() > 12) {
+        // Remove trailing \r if present
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        try {
             response.statusCode = std::stoi(line.substr(9, 3));
+        } catch (...) {
+            response.statusCode = 500; // Error parsing status code
         }
-        else
-        {
-            response.statusCode = 500;
-        }
+    } else {
+        response.statusCode = 500; // Malformed status line
     }
 
-    // Parse headers
-    while (std::getline(responseStream, line) && line != "\r")
-    {
-        size_t colonPos = line.find(':');
-        if (colonPos != std::string::npos)
-        {
-            std::string key = line.substr(0, colonPos);
-            std::string value = line.substr(colonPos + 2); // Skip ": "
-            if (!value.empty() && value.back() == '\r')
-            {
-                value.pop_back();
+    // Parse Headers
+    while (std::getline(headersStream, line)) {
+        // Remove trailing \r if present
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+
+        // Stop if we hit the empty line separating headers from body
+        if (line.empty()) break;
+
+        size_t colon_pos = line.find(':');
+        if (colon_pos != std::string::npos) {
+            std::string key = line.substr(0, colon_pos);
+            size_t value_start = colon_pos + 1;
+            // Trim leading whitespace from value
+            while (value_start < line.length() && isspace(line[value_start])) {
+                value_start++;
             }
+            std::string value = line.substr(value_start);
+
+            // Store header
             response.headers[key] = value;
+
+            // Check for Content-Length
+            if (key == "Content-Length") {
+                try {
+                    response.contentLength = std::stoi(value);
+                } catch(...) {
+                    response.contentLength = 0; // Error parsing length
+                }
+            }
         }
     }
 
-    // Parse body
-    std::string body;
-    while (std::getline(responseStream, line))
-    {
-        body += line;
-        if (!responseStream.eof())
-        {
-            body += "\n";
-        }
-    }
+    // Body is NOT parsed here
+    response.body = "";
 
-    // Trim trailing whitespace from body
-    while (!body.empty() && (body.back() == '\n' || body.back() == '\r' || body.back() == ' '))
-    {
-        body.pop_back();
-    }
-
-    response.body = body;
     return response;
 }
 
@@ -207,6 +227,7 @@ void SecureHttpClient::writeHeaders(const std::map<std::string, std::string> &he
 {
     for (const auto &[key, value] : headers)
     {
+        DEBUG_PRINTF(">> %s: %s\n", key.c_str(), value.c_str());
         _client->println(key + ": " + value);
     }
 }

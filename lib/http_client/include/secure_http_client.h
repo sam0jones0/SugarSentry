@@ -5,6 +5,12 @@
 #include "i_secure_client.h"
 #include <memory>
 
+// Struct to hold separately parsed HTTP headers and body
+struct RawHttpResponse {
+    std::string headersStr; // Contains status line + all headers
+    std::string bodyStr;    // Contains just the response body
+};
+
 class SecureHttpClient : public IHttpClient
 {
 public:
@@ -28,8 +34,8 @@ private:
     uint16_t _port;
     static constexpr uint32_t DEFAULT_TIMEOUT = 5000; // 5 seconds
 
-    std::string readResponse();
-    HttpResponse parseResponse(const std::string &rawResponse);
+    RawHttpResponse readResponse();
+    HttpResponse parseResponse(const RawHttpResponse &rawResponse);
     void writeHeaders(const std::map<std::string, std::string> &headers);
 };
 
