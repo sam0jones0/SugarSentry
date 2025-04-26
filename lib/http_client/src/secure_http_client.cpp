@@ -75,20 +75,26 @@ HttpResponse SecureHttpClient::send(const HttpRequest &request)
     response.body.clear(); // Ensure body starts empty
     if (response.contentLength > 0) {
         response.body.reserve(response.contentLength);
-        for (int i = 0; i < response.contentLength; ++i) {
-            // Add timeout check within the loop if necessary
+        size_t bytesRead = 0;
+        
+        // Read exactly contentLength bytes, no more no less
+        while (bytesRead < response.contentLength && _client->connected()) {
+            // Wait for data to be available
             while (_client->available() == 0 && _client->connected()) {
                 // Optional: Add a small delay or timeout mechanism here
                 PLATFORM_DELAY(1); // Small delay to wait for data
             }
+            
+            // Read a character when available
             if (_client->available() > 0) {
                 int c = _client->read();
                 
                 if (c < 0) {
-                    break;
+                    break; // Error reading
                 }
                 
                 response.body += (char)c;
+                bytesRead++;
             } else {
                 // Connection closed or timeout before full body read
                 DEBUG_PRINT("Error reading response body: connection issue or timeout");

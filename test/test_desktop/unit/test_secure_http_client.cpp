@@ -407,7 +407,7 @@ TEST_F(SecureHttpClientTest, PostNon200Response)
     EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
         .WillOnce(testing::Return("Content-Type: application/json\r\n"));
     EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
-        .WillOnce(testing::Return("Content-Length: 46\r\n"));
+        .WillOnce(testing::Return("Content-Length: 45\r\n"));
     EXPECT_CALL(*mock_secure_client_, readStringUntil('\n'))
         .WillOnce(testing::Return("\r\n"));
     
@@ -443,10 +443,10 @@ TEST_F(SecureHttpClientTest, PostNon200Response)
     
     // Verify response
     EXPECT_EQ(500, response.statusCode);
-    // Match the exact response we're seeing
-    EXPECT_EQ("{\"error\":\"An internal server error occurred\"}{", response.body);
+    // Match the exact response body without any unexpected characters
+    EXPECT_EQ("{\"error\":\"An internal server error occurred\"}", response.body);
     EXPECT_EQ("application/json", response.headers["Content-Type"]);
-    EXPECT_EQ(46, response.contentLength); // Verify Content-Length is parsed correctly
+    EXPECT_EQ(45, response.contentLength); // Verify Content-Length is parsed correctly
 }
 
 // Test Case 4: Response with empty body
